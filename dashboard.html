@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PANDEM - Pandemic Mapping</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand">
+    <div class="brand-mark">♥</div>
+    <span class="brand-name">PANDEM<small>Pandemic Mapping</small></span>
+  </div>
+
+  <div class="nav-right">
+    <span class="mode-chip" id="modeChip"><i class="ping"></i><span id="modeChipText">Connecting…</span></span>
+    <button class="btn btn-primary" id="headerReportBtn">
+      <span>＋</span><span class="btn-label">Report an issue</span>
+    </button>
+    <button class="icon-btn" id="profileOpenBtn" title="Account">👤</button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= MAP ================= -->
+  <section class="map-hero">
+    <div class="map-shell">
+      <div id="map"></div>
+
+      <div class="map-loading" id="mapLoading">
+        <div class="ring"></div>
+        <p>LOADING COMMUNITY REPORTS…</p>
+      </div>
+
+      <div class="geo-banner" id="geoBanner">📍 Location access is off. Use “Pick on map” to drop a pin manually.</div>
+
+      <!-- the only thing left on the map itself -->
+      <button class="locate-btn" id="locateBtn">📍<span>Re-center</span></button>
+    </div>
+
+    <!-- Stats, filters and the legend now live in this bar UNDER the map,
+         so nothing covers the map area any more. -->
+    <div class="map-bar">
+      <div class="bar-row">
+        <span class="risk-pill low" id="riskChip">🟢 Low</span>
+        <span class="stat-inline"><b id="statIllness">0</b> illness</span>
+        <span class="stat-inline"><b id="statRisk">0</b> breeding risks</span>
+        <span class="stat-inline"><b id="statWater">0</b> water issues</span>
+        <span class="bar-grow"></span>
+        <span class="bar-meta" id="barMeta">within 5 km · last 30 days</span>
+        <span class="bar-meta" id="sourceText">—</span>
+      </div>
+
+      <button class="bar-toggle" id="panelToggle">⚙ Filters &amp; legend</button>
+
+      <div class="bar-panel" id="barPanel">
+        <div class="bar-row">
+          <span class="bar-label">Show</span>
+          <select class="time-select" id="timeSelect">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="365">Last 12 months</option>
+            <option value="0">All time</option>
+          </select>
+          <div class="chip-row" id="typeChips"></div>
+        </div>
+
+        <div class="bar-row">
+          <span class="bar-label">Legend</span>
+          <div class="legend-items" id="legendItems"></div>
+          <span class="legend-note">Illness pins are blurred by ~150 m to protect who reported them.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= REPORT ================= -->
+  <section class="block" id="report">
+    <div class="section-head">
+      <div class="eyebrow">Community reporting</div>
+      <h2>Report an issue</h2>
+      <p>Six options — pick the one that fits. Your report is on the map within seconds, so neighbours and local teams can act on it.</p>
+    </div>
+
+    <div class="group-title"><span class="g-ic">🩺</span> Mosquito-borne illness</div>
+    <div class="report-grid" id="illnessGrid"></div>
+
+    <div class="group-title"><span class="g-ic">💧</span> Water &amp; breeding-site problems</div>
+    <div class="report-grid" id="riskGrid"></div>
+  </section>
+
+  <!-- ================= FEED ================= -->
+  <section class="block" id="feed" style="padding-top:0;">
+    <div class="feed-wrap">
+      <div class="feed-head">
+        <h3>Recent community reports</h3>
+        <span class="count" id="feedCount">—</span>
+      </div>
+      <div class="feed-list" id="feedList">
+        <div class="empty-state"><span class="big">🗺️</span>Loading reports…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= HOW ================= -->
+  <section class="block" id="how" style="padding-top:0;">
+    <div class="section-head">
+      <div class="eyebrow">How it works</div>
+      <h2>From a puddle to prevention</h2>
+    </div>
+    <div class="timeline">
+      <div class="step">
+        <div class="num">🔍</div>
+        <h4>Explore</h4>
+        <p>See illness reports and breeding risks around any neighbourhood in India.</p>
+      </div>
+      <div class="step">
+        <div class="num">📝</div>
+        <h4>Report</h4>
+        <p>Log a confirmed or suspected case, or a water problem that could breed mosquitoes.</p>
+      </div>
+      <div class="step">
+        <div class="num">📍</div>
+        <h4>Map</h4>
+        <p>Clusters build a live risk picture so cleanup and fogging can be targeted.</p>
+      </div>
+      <div class="step">
+        <div class="num">🌱</div>
+        <h4>Improve</h4>
+        <p>Fewer stagnant-water sites means fewer mosquitoes and fewer cases.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PRIVACY ================= -->
+  <section class="block" id="privacy" style="padding-top:20px;">
+    <div class="privacy">
+      <div>
+        <div class="badge">🔒 Privacy</div>
+        <h2>Your Privacy Matters</h2>
+        <p>Personal identities and exact home locations are not displayed publicly. Health-related reports are intended to be represented approximately or anonymously to help protect user privacy.</p>
+      </div>
+      <div class="glass-note">
+        Community-reported information should not be considered an official medical diagnosis, medical advice, or government outbreak declaration.
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="f-brand"><span>♥</span> PANDEM</div>
+  <div>© 2026 PANDEM - A pandemic mapping prototype for India.</div>
+</footer>
+
+<!-- ================= PROFILE PANEL ================= -->
+<div class="overlay" id="overlay"></div>
+<aside class="profile-panel" id="profilePanel">
+  <button class="close-btn" id="profileCloseBtn">✕</button>
+
+  <div id="signedInBlock" style="display:none;">
+    <img class="p-photo" id="panelAvatar" src="" alt="Profile photo">
+    <h3 id="panelName">—</h3>
+    <div class="p-email" id="panelEmail">—</div>
+    <div class="p-meta">
+      <div><span>Member since</span><span id="panelCreated" class="mono">—</span></div>
+      <div><span>Last login</span><span id="panelLastLogin" class="mono">—</span></div>
+      <div><span>My reports</span><span id="panelReports" class="mono">0</span></div>
+    </div>
+    <div class="panel-note">You're signed in, so your reports are linked to your account and can be withdrawn from any device.</div>
+  </div>
+
+  <div id="guestBlock" style="display:none;">
+    <div class="guest-avatar">👤</div>
+    <h3>Browsing as guest</h3>
+    <div class="p-email">No account needed — reporting is open to everyone.</div>
+    <div class="p-meta">
+      <div><span>My reports</span><span id="guestReports" class="mono">0</span></div>
+      <div><span>Storage</span><span id="guestStorage" class="mono">—</span></div>
+    </div>
+    <div class="panel-note">Sign in with Google only if you want your reports tied to an account and synced across devices. Nothing else changes.</div>
+  </div>
+
+  <div class="panel-actions">
+    <button class="btn btn-primary" id="googleSignInBtn">Continue with Google</button>
+    <button class="btn btn-ghost" id="runDiagBtn">Run database test</button>
+    <button class="btn btn-danger" id="signOutBtn" style="display:none;">Sign out</button>
+  </div>
+</aside>
+
+<!-- ================= REPORT MODAL ================= -->
+<div class="modal" id="reportModal" role="dialog" aria-modal="true">
+  <div class="modal-head">
+    <div class="m-ic" id="modalIcon">🦟</div>
+    <div>
+      <h3 id="modalTitle">Report an issue</h3>
+      <p id="modalSub">Choose the closest match, then drop a pin on the map.</p>
+    </div>
+    <button class="close-btn" id="modalCloseBtn">✕</button>
+  </div>
+
+  <div class="modal-body">
+    <div class="field">
+      <label>What are you reporting?</label>
+      <div class="type-grid" id="modalTypeGrid"></div>
+    </div>
+
+    <div class="field">
+      <label id="severityLabel">How severe is it?</label>
+      <div class="seg" id="severitySeg"></div>
+    </div>
+
+    <div class="field">
+      <label>Where is it?</label>
+      <div class="picker-map" id="pickerMap"></div>
+      <div class="loc-row" style="margin-top:8px;">
+        <span class="loc-readout" id="locReadout">No pin dropped yet — tap the map above.</span>
+        <button class="btn btn-ghost" id="useMyLocationBtn" style="padding:8px 12px;font-size:12.5px;">📍 Use my location</button>
+      </div>
+      <p class="loc-hint" style="margin-top:6px;">Tap anywhere on the mini-map to place your pin. <b>Zoom is limited to India.</b></p>
+    </div>
+
+    <div class="field">
+      <label>Details (optional)</label>
+      <textarea class="note-input" id="noteInput" maxlength="400" placeholder="e.g. Water has been standing in the park for a week and mosquitoes are breeding."></textarea>
+      <div class="char-count"><span id="charCount">0</span>/400</div>
+    </div>
+
+    <div class="privacy-line">
+      <span>🔒</span>
+      <span>We save your pin shifted by up to <b>150 m</b>, so it shows the street — never your doorstep. No name or contact details are attached.</span>
+    </div>
+  </div>
+
+  <div class="modal-foot">
+    <button class="btn btn-ghost" id="cancelReportBtn">Cancel</button>
+    <button class="btn btn-primary" id="submitReportBtn">Submit report</button>
+  </div>
+</div>
+
+<div id="toastHost"></div>
+
+<!-- Firebase (compat SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="firebase-config.js"></script>
+<script src="store.js"></script>
+<script src="dashboard.js"></script>
+
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a396f9b65c12a786',t:'MTc4OTEzMjg4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

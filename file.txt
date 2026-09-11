@@ -1,0 +1,19 @@
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCNCo83ZgyQ5JEbYDiN7w-Vs2IPAYci69s",
+    authDomain: "healthapp-c22c5.firebaseapp.com",
+    projectId: "healthapp-c22c5",
+    storageBucket: "healthapp-c22c5.firebasestorage.app",
+    messagingSenderId: "399695097115",
+    appId: "1:399695097115:web:ebd244f60ef203e4bdb7be"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
