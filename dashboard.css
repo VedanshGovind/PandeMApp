@@ -82,6 +82,13 @@ header.navbar{
   transition:transform .15s ease;
 }
 .icon-btn:hover{ transform:translateY(-2px); }
+/* The profile photo is injected as an <img>; without this it renders at the
+   provider's intrinsic size and blows the button out of the navbar. */
+.icon-btn .avatar-img,
+.avatar-img{
+  width:100%; height:100%; object-fit:cover; display:block;
+  border-radius:50%; background:var(--bg);
+}
 
 .profile-btn{
   display:flex; align-items:center; gap:8px;
@@ -110,10 +117,17 @@ header.navbar{
   border-radius:24px; overflow:hidden; box-shadow:var(--shadow-lg);
   border:1px solid var(--line); background:#dbe7ee;
 }
-/* Keep Leaflet's panes (up to z-index 700) in their own stacking context so
+/* Keep MapLibre's panes (up to z-index 700) in their own stacking context so
    the floating cards below always paint on top of the map. */
 #map{ width:100%; height:100%; background:#dbe7ee; position:relative; z-index:0; }
 
+.map-fallback{
+  max-width:420px; text-align:center; color:#fff; padding:0 24px;
+  display:flex; flex-direction:column; gap:12px; align-items:center;
+}
+.map-fallback h3{ margin:0; font-size:1.05rem; font-weight:900; letter-spacing:-.01em; }
+.map-fallback p{ margin:0; font-size:.86rem; line-height:1.5; color:rgba(255,255,255,.72); }
+.map-fallback .btn{ padding:10px 18px; border-radius:999px; font-weight:800; font-size:.85rem; }
 .map-loading{
   position:absolute; inset:0; z-index:1500;
   background:linear-gradient(160deg,var(--navy),#0d2c4a);
@@ -139,6 +153,15 @@ header.navbar{
 .geo-banner.show{ display:flex; }
 
 /* --- map shell: the locate button is the only thing left on the map --- */
+.map-credit{
+  position:absolute; left:8px; bottom:6px; z-index:2;
+  max-width:calc(100% - 70px); padding:3px 8px; border-radius:8px;
+  background:rgba(10,26,40,.62); color:#fff; font-size:.62rem; line-height:1.35;
+  letter-spacing:.01em; pointer-events:auto; backdrop-filter:blur(3px);
+}
+.map-credit a{ color:#cfe6f7; text-decoration:none; }
+.map-credit a:hover{ text-decoration:underline; }
+.map-credit.small{ left:4px; bottom:3px; font-size:.55rem; padding:2px 6px; }
 .locate-btn{
   position:absolute; bottom:18px; right:18px; z-index:1000;
   background:var(--white); border:1px solid var(--line); border-radius:12px;
@@ -230,11 +253,28 @@ select.time-select{
 .report-pin.disease{ animation:pinpop .35s cubic-bezier(.2,1.4,.4,1); }
 @keyframes pinpop{ from{ transform:rotate(-45deg) scale(0); } to{ transform:rotate(-45deg) scale(1); } }
 
-.leaflet-popup-content-wrapper{ border-radius:14px; box-shadow:var(--shadow-md); }
-.leaflet-popup-content{ margin:12px 14px; font-size:13px; line-height:1.5; }
+/* ---- MapLibre popups + controls ---- */
+.maplibregl-popup-content{
+  border-radius:14px; box-shadow:var(--shadow-md);
+  padding:12px 14px; font-size:13px; line-height:1.5; color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;
+}
+.maplibregl-popup-close-button{
+  font-size:18px; line-height:1; padding:2px 7px; color:var(--ink-soft); background:transparent;
+}
+.maplibregl-popup-close-button:hover{ background:var(--bg); color:var(--navy); }
+.maplibregl-popup-tip{ border-top-color:var(--white); border-bottom-color:var(--white); }
+.maplibregl-marker{ cursor:pointer; }
+.maplibregl-ctrl-group{ box-shadow:var(--shadow-sm); border-radius:10px; overflow:hidden; }
+.maplibregl-ctrl-attrib.maplibregl-compact{ border-radius:10px; }
+.maplibregl-ctrl-attrib a{ color:var(--ink-soft); }
 .pop-title{ font-weight:700; font-size:14px; color:var(--navy); display:flex; align-items:center; gap:6px; }
 .pop-meta{ font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
 .pop-note{ margin-top:7px; padding-top:7px; border-top:1px solid var(--line); font-size:12.5px; color:var(--ink); }
+.hint-noop{
+  font-size:.72rem; font-weight:700; color:#8aa0b4; white-space:nowrap;
+  cursor:default; letter-spacing:.01em;
+}
 .pop-actions{ margin-top:9px; }
 
 /* ===== Sections ===== */
@@ -352,6 +392,41 @@ textarea.note-input:focus, select.time-select:focus{ outline:2px solid rgba(21,1
 }
 .loc-hint{ font-size:11.5px; color:var(--ink-soft); line-height:1.5; }
 .loc-hint b{ color:var(--navy); }
+/* ---------- report photos ---------- */
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+.photo-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.photo-row .btn{ padding:9px 14px; font-size:.8rem; }
+.photo-preview{ margin-top:10px; }
+.photo-preview img{
+  width:100%; max-height:190px; object-fit:cover; display:block;
+  border-radius:14px; border:1px solid var(--line); background:#eef4f8;
+}
+.pop-photo, .f-photo{
+  width:100%; max-height:150px; object-fit:cover; display:block;
+  border-radius:12px; border:1px solid var(--line); margin-top:8px; cursor:zoom-in;
+  background:#eef4f8;
+}
+.f-photo{ max-height:120px; }
+
+/* ---------- lightbox ---------- */
+.lightbox{
+  position:fixed; inset:0; z-index:3000; background:rgba(6,20,32,.92);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.lightbox[hidden]{ display:none; }
+.lightbox img{
+  max-width:min(96vw,900px); max-height:86vh; border-radius:16px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6); background:#fff;
+}
+.lb-close{
+  position:absolute; top:16px; right:18px; width:40px; height:40px;
+  border-radius:999px; border:0; background:rgba(255,255,255,.14);
+  color:#fff; font-size:1.05rem; cursor:pointer;
+}
+.lb-close:hover{ background:rgba(255,255,255,.26); }
 .privacy-line{
   display:flex; gap:9px; align-items:flex-start; font-size:11.5px; color:var(--ink-soft);
   background:rgba(14,165,160,0.07); border:1px solid rgba(14,165,160,0.18);

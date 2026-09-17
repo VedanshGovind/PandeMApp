@@ -1,4 +1,4 @@
-/* PANDEM — entry page.
+/* PandeMApp — entry page.
    Google sign-in is optional: guests go straight to the dashboard. */
 
 const googleLoginBtn = document.getElementById("googleLoginBtn");

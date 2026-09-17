@@ -1,6 +1,9 @@
+// MapLibre v6 ships ESM only, with named exports (no default export).
+import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.mjs";
+
 /* ============================================================
-   PANDEM — dashboard logic
-   • Leaflet map locked to India
+   PandeMApp — dashboard logic
+   • MapLibre GL map locked to India
    • Real community reports (Firestore, with local fallback)
    • Optional Google sign-in
    ============================================================ */
@@ -52,29 +55,145 @@
 
   const WATER_TYPES = ["stagnant_water", "drainage"];
 
-  /* ---------------- India-only map bounds ---------------- */
-  const INDIA_BOUNDS = L.latLngBounds([6.2, 67.8], [35.8, 97.6]);
-  const DEFAULT_CENTER = [20.5937, 78.9629];
-
   /* ---------------- app state ---------------- */
   let map = null;
   let pickerMap = null;
   let pickerMarker = null;
-  let userLatLng = null;      // jittered display location
+  let userLatLng = null;          // jittered display location
   let userMarker = null;
   let allReports = [];
   // "other_risk" is the bucket for legacy/unrecognised reports — it has no card
   // or chip of its own, but must stay visible so old data never disappears.
   let visibleTypes = new Set(Object.keys(TYPES).concat(["other_risk"]));
-  let timeWindow = 30;        // days
+  let timeWindow = 30;            // days
   let currentUser = null;
-  let layerGroups = {};
-  const markerIndex = new Map(); // id -> { layer, report }
+  let markers = [];               // MapLibre markers currently on the map
+  const markerIndex = new Map();  // id -> { layer, report }
   let selectedType = null;
   let selectedSeverity = 1;
   let pendingCoords = null;
+  let pendingPhoto = null;        // data-URL of the photo chosen in the modal
 
   const $ = (id) => document.getElementById(id);
+
+  /* ---------------- India-only map bounds (MapLibre: [west,south] → [east,north]) ---------------- */
+  const INDIA_BOUNDS = [[67.8, 6.2], [97.6, 35.8]];
+  const INDIA_CENTER = [78.9629, 20.5937];        // [lng, lat]
+  const EMPTY_FC = { type: "FeatureCollection", features: [] };
+
+  /* ================= basemap providers =================
+     Tile hosts block by IP, region or referrer, and when they do the map turns
+     into a wall of "403 Access blocked". Rather than betting on one host, the
+     map walks this list and keeps the first one that actually returns tiles.
+
+     Deliberately absent: tile.openstreetmap.org. Its usage policy requires an
+     identifiable User-Agent, which a browser cannot set, so real users get
+     blocked while server-side tests pass — exactly the failure we hit. Every
+     host below is CDN-hosted and browser-friendly.
+
+     Force a provider with ?tiles=<id>  (e.g. ?tiles=carto). The provider that
+     works is remembered in localStorage so the next visit starts there. */
+  const MAPTILER_KEY = "";   // optional: paste a free MapTiler key to use it first
+
+  const CARTO_ATTR = '&copy; <a href="https://carto.com/attributions">CARTO</a> ' +
+                     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+
+  const TILE_PROVIDERS = [
+    {
+      id: "openfreemap", label: "OpenFreeMap", host: "tiles.openfreemap.org",
+      style: "https://tiles.openfreemap.org/styles/liberty",
+      attribution: '&copy; <a href="https://openfreemap.org">OpenFreeMap</a> ' +
+                   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    },
+    {
+      id: "carto", label: "CARTO Voyager", host: "basemaps.cartocdn.com",
+      style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+      attribution: CARTO_ATTR
+    },
+    {
+      id: "versatiles", label: "VersaTiles", host: "tiles.versatiles.org",
+      style: "https://tiles.versatiles.org/assets/styles/colorful/style.json",
+      attribution: '&copy; <a href="https://versatiles.org">VersaTiles</a> ' +
+                   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    },
+    {
+      // Plain raster, no style JSON, no sprite — if this fails the network is
+      // the problem, not the provider.
+      id: "cartoraster", label: "CARTO raster", host: "basemaps.cartocdn.com",
+      style: {
+        version: 8,
+        sources: {
+          carto: {
+            type: "raster", tileSize: 256,
+            tiles: [
+              "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
+              "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
+              "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
+            ],
+            attribution: CARTO_ATTR
+          }
+        },
+        layers: [{ id: "carto", type: "raster", source: "carto" }]
+      },
+      attribution: CARTO_ATTR
+    }
+  ];
+
+  if (MAPTILER_KEY) {
+    TILE_PROVIDERS.unshift({
+      id: "maptiler", label: "MapTiler", host: "api.maptiler.com",
+      style: "https://api.maptiler.com/maps/streets/style.json?key=" + MAPTILER_KEY,
+      attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> ' +
+                   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    });
+  }
+
+  const TILE_STORE_KEY = "healthmap.basemap.v1";
+
+  /* MapLibre's AJAXError only sometimes carries `.status`; when it doesn't, the
+     code is still in the message, e.g. "AJAXError: Forbidden (403): https://…".
+     A refused or unreachable host is the signal we care about. */
+  function errorStatus(err) {
+    if (!err) return null;
+    if (typeof err.status === "number") return err.status;
+    if (err.response && typeof err.response.status === "number") return err.response.status;
+    const m = /\((\d{3})\)/.exec(err.message || "");
+    if (m) return Number(m[1]);
+    if (/failed to fetch|networkerror|load failed/i.test(err.message || "")) return 0;
+    return null;
+  }
+  function isDecisive(status) { return status === 403 || status === 429 || status === 0; }
+
+  function styleFor(p) { return p.style; }
+
+  /* OpenFreeMap's and CARTO's vector styles carry no attribution of their own,
+     which leaves OpenStreetMap's contributors uncredited — and ODbL requires
+     credit. Rather than fight MapLibre's AttributionControl (it keeps a shared
+     list, so swapping controls only appends), the map shows its own credit line,
+     rewritten whenever the provider changes. Handy side effect: the corner of the
+     map tells you who is actually serving it. */
+  function setCredit(p) {
+    const html = p.attribution || "";
+    const main = $("mapCredit");
+    if (main) main.innerHTML = html;
+    const picker = $("pickerCredit");
+    if (picker) picker.innerHTML = html;
+  }
+
+  /* Pick the starting provider: ?tiles= beats a remembered one. */
+  function initialProviderIndex() {
+    const forced = new URLSearchParams(location.search).get("tiles");
+    if (forced) {
+      const i = TILE_PROVIDERS.findIndex((p) => p.id === forced);
+      if (i >= 0) return i;
+    }
+    try {
+      const saved = localStorage.getItem(TILE_STORE_KEY);
+      const i = TILE_PROVIDERS.findIndex((p) => p.id === saved);
+      if (i >= 0) return i;
+    } catch (e) { /* private mode */ }
+    return 0;
+  }
 
   /* ================= helpers ================= */
   function toast(msg, kind) {
@@ -108,6 +227,131 @@
     return km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km";
   }
 
+  /* ================= report photos =================
+     One photo per report, resized and re-encoded in the browser before it is
+     stored. Two side effects worth knowing:
+       • Re-drawing through a canvas strips EXIF, including GPS coordinates, so a
+         photo of a breeding site doesn't publish where it was taken.
+       • The result is a compact data URL that fits inside a Firestore document
+         (1 MB limit), so no Storage bucket, rules change or billing is needed. */
+  const PHOTO_MAX_EDGE = 1000;
+  const PHOTO_QUALITY = 0.7;
+  const PHOTO_MAX_CHARS = 260000;   // ≈190 KB of image inside the 1 MB doc limit
+
+  /* Reports come from a public-write database, so never trust the field. */
+  function photoUrl(v) {
+    return (typeof v === "string" && v.length <= 400000 &&
+            /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v)) ? v : "";
+  }
+
+  /* Google profile URLs carry a size suffix (=s96-c); ask for one that suits the
+     element instead of whatever the provider picked. */
+  function avatarSrc(url, size) {
+    if (!url) return "";
+    return url.replace(/=s\d+-c$/, "=s" + size + "-c");
+  }
+
+  function initialsOf(name) {
+    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "👤";
+    return ((parts[0][0] || "") + (parts[1] ? parts[1][0] : "")).toUpperCase();
+  }
+
+  function setAvatar(user) {
+    const btn = $("profileOpenBtn");
+    if (user && user.photoURL) {
+      btn.innerHTML = '<img class="avatar-img" src="' + avatarSrc(user.photoURL, 96) + '" alt="Your profile photo" />';
+    } else {
+      btn.innerHTML = "👤";
+    }
+
+    const big = $("panelAvatar"), fallback = $("panelInitials");
+    if (user && user.photoURL) {
+      big.src = avatarSrc(user.photoURL, 160);
+      big.hidden = false;
+      if (fallback) fallback.hidden = true;
+    } else {
+      big.removeAttribute("src");        // an empty src renders a broken-image icon
+      big.hidden = true;
+      if (fallback) { fallback.hidden = false; fallback.textContent = user ? initialsOf(user.displayName || user.email) : "👤"; }
+    }
+  }
+
+  function photoHintFor(category) {
+    return category === "disease"
+      ? "A photo of the doctor's note or test report helps confirm it — cover names, IDs and any other personal details first."
+      : "A photo of the place — a drain, puddle, tank or dump site — helps others confirm it and act on it.";
+  }
+
+  function loadBitmap(file) {
+    if (window.createImageBitmap) {
+      return createImageBitmap(file, { imageOrientation: "from-image" })   // rotates phone photos correctly
+        .catch(() => createImageBitmap(file))
+        .catch(() => fallbackBitmap(file));
+    }
+    return fallbackBitmap(file);
+  }
+
+  function fallbackBitmap(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That file isn't an image we can read.")); };
+      img.src = url;
+    });
+  }
+
+  function compressImage(file) {
+    return loadBitmap(file).then((bitmap) => {
+      const w0 = bitmap.width || 1, h0 = bitmap.height || 1;
+      const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(w0, h0));
+      const w = Math.max(1, Math.round(w0 * scale));
+      const h = Math.max(1, Math.round(h0 * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+      if (bitmap.close) bitmap.close();
+
+      let q = PHOTO_QUALITY, out = canvas.toDataURL("image/jpeg", q);
+      while (out.length > PHOTO_MAX_CHARS && q > 0.35) {   // shrink until it fits the budget
+        q -= 0.1;
+        out = canvas.toDataURL("image/jpeg", q);
+      }
+      if (out.length > PHOTO_MAX_CHARS) throw new Error("That image is too large even after compressing.");
+      return out;
+    });
+  }
+
+  function setPendingPhoto(dataUrl) {
+    pendingPhoto = dataUrl || null;
+    const img = $("photoPreviewImg"), box = $("photoPreview"), rm = $("photoRemoveBtn");
+    if (pendingPhoto) {
+      img.src = pendingPhoto;
+      box.hidden = false;
+      rm.hidden = false;
+      $("photoPickBtn").textContent = "📷 Replace photo";
+    } else {
+      img.removeAttribute("src");
+      box.hidden = true;
+      rm.hidden = true;
+      $("photoPickBtn").textContent = "📷 Add a photo";
+      $("photoInput").value = "";
+    }
+  }
+
+  function openLightbox(reportId) {
+    const r = allReports.find((x) => x.id === reportId);
+    const src = r && photoUrl(r.photo);
+    if (!src) return;
+    $("lightboxImg").src = src;
+    $("lightbox").hidden = false;
+  }
+  function closeLightbox() {
+    $("lightbox").hidden = true;
+    $("lightboxImg").removeAttribute("src");
+  }
+
   /* Shift a point by up to `meters` so a report never lands on someone's doorstep. */
   function jitter(lat, lng, meters) {
     const dist = Math.sqrt(Math.random()) * meters;
@@ -127,33 +371,61 @@
     return currentUser ? currentUser.uid : Store.guestId();
   }
 
-  function pinIcon(typeKey) {
-    const t = typeInfo(typeKey);
-    return L.divIcon({
-      className: "",
-      html: '<div class="report-pin' + (t.category === "disease" ? " disease" : "") + '" style="background:' + t.color + '"><span>' + t.icon + "</span></div>",
-      iconSize: [30, 30],
-      iconAnchor: [15, 28],
-      popupAnchor: [0, -26]
-    });
+  /* Deleting a cloud report requires a signed-in author — see firestore.rules.
+     A guest can't prove ownership to the server, so their only working path is
+     a report held locally. Never offer a button that is guaranteed to fail. */
+  function canWithdraw(r) {
+    if (r.userId !== currentUserId()) return false;
+    if (Store.getMode() === "firestore" && !currentUser) return false;
+    return true;
   }
 
-  /* ================= map ================= */
-  /* Leaflet's maxBounds only constrains the map CENTRE — at low zoom the
-     viewport is wider than India, so neighbouring countries still show.
-     This finds the lowest zoom at which the viewport fits entirely inside
-     India's box, i.e. "zoom out as far as you like, you still see India". */
+  function withdrawControl(r, mine) {
+    if (!mine) return "";
+    return canWithdraw(r)
+      ? '<button class="link-btn" data-del="' + r.id + '">Withdraw</button>'
+      : '<span class="hint-noop" title="Sign in to manage your reports across devices">Sign in to withdraw</span>';
+  }
+
+  function pinElement(typeKey) {
+    const t = typeInfo(typeKey);
+    const el = document.createElement("div");
+    el.className = "report-pin" + (t.category === "disease" ? " disease" : "");
+    el.style.background = t.color;
+    el.innerHTML = "<span>" + t.icon + "</span>";
+    return el;
+  }
+
+  /* ================= map (MapLibre GL JS) ================= */
+  let mapLoaded = false;
+  let providerIndex = 0;
+  let tileFailures = 0;
+  let switching = false;
+  let gaveUp = false;
+  let paintChecks = 0;
+  let paintStart = 0;
+  let pendingSwitch = null;
+  let tilesDeadline = null;
+  let circleData = EMPTY_FC;      // illness halos, re-applied after a style swap
+  let circleDirty = false;
+  const providerLog = [];
+
+  /* maxBounds only constrains the map CENTRE — at low zoom the viewport is wider
+     than India, so neighbouring countries would still show. This returns the
+     lowest zoom at which the viewport fits entirely inside India's box.
+     MapLibre's world is tileSize(512) × 2^zoom pixels. */
   function indiaLockZoom(m) {
-    const size = m.getSize();
-    if (!size || !size.x || !size.y) return 4;
-    const nw = INDIA_BOUNDS.getNorthWest();
-    const se = INDIA_BOUNDS.getSouthEast();
-    for (let z = 3; z <= 12.001; z += 0.25) {
-      const a = m.project(nw, z);
-      const b = m.project(se, z);
-      if (Math.abs(b.x - a.x) >= size.x && Math.abs(b.y - a.y) >= size.y) return z;
+    const el = m.getContainer();
+    const w = el.clientWidth, h = el.clientHeight;
+    if (!w || !h) return 4;
+    const mercY = (lat) => 0.5 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI);
+    const wFrac = (INDIA_BOUNDS[1][0] - INDIA_BOUNDS[0][0]) / 360;
+    const hFrac = Math.abs(mercY(INDIA_BOUNDS[0][1]) - mercY(INDIA_BOUNDS[1][1]));
+    for (let z = 2; z <= 14.001; z += 0.25) {
+      const world = 512 * Math.pow(2, z);
+      if (wFrac * world >= w && hFrac * world >= h) return z;
     }
-    return 12;
+    return 14;
   }
 
   function applyIndiaLock(m) {
@@ -164,37 +436,59 @@
   }
 
   function initMap() {
-    if (typeof L === "undefined") {
+    if (typeof maplibregl === "undefined") {
       $("mapLoading").innerHTML = "<p>MAP LIBRARY FAILED TO LOAD — CHECK YOUR CONNECTION</p>";
       return;
     }
 
-    map = L.map("map", {
-      zoomControl: true,
-      zoomSnap: 0.25,
-      zoomDelta: 0.5,
+    providerIndex = initialProviderIndex();
+
+    map = new maplibregl.Map({
+      container: "map",
+      style: styleFor(TILE_PROVIDERS[providerIndex]),
+      center: INDIA_CENTER,
+      zoom: 4,
       minZoom: 3,
-      maxZoom: 18,
-      maxBounds: INDIA_BOUNDS,
-      maxBoundsViscosity: 1.0,
-      worldCopyJump: false
+      maxZoom: 17,
+      maxBounds: INDIA_BOUNDS,     // cannot pan outside India
+      attributionControl: false,   // re-added bottom-left so it clears the locate button
+      dragRotate: false,
+      pitchWithRotate: false
     });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      minZoom: 3,
-      maxZoom: 19,
-      bounds: INDIA_BOUNDS,
-      noWrap: true,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    setCredit(TILE_PROVIDERS[providerIndex]);
 
-    // Start over India, then lock the zoom-out limit to the India-only level.
-    map.setView(DEFAULT_CENTER, 5);
-    applyIndiaLock(map);
-    map.fitBounds(INDIA_BOUNDS);
+    // "load" fires for the first style only, "idle" once the map has actually
+    // drawn tiles — after a failover there is no second "load", so both paths
+    // end in mapReady().
+    /* "Ready" means tiles actually painted, not merely "the style parsed".
+       An inline style fires load instantly even when every tile is refused —
+       that's how a blocked host ends up looking like a blank white map.
+       (MapLibre v6 has no dataType:"tile" event, so ask the map directly.) */
+    map.on("load", armPaintCheck);
 
-    layerGroups.disease = L.layerGroup().addTo(map);
-    layerGroups.risk = L.layerGroup().addTo(map);
+    map.on("styledata", ensureDiseaseLayers);   // setStyle drops our own layers
+
+    map.on("error", (e) => {
+      const err = e && e.error;
+      const status = errorStatus(err);
+      if (providerLog.length < 60) {
+        providerLog.push({ provider: TILE_PROVIDERS[providerIndex].id, status: status === null ? "error" : status, msg: err && err.message });
+      }
+      // 403 / 429 = the host is refusing us; 0 = the request never completed
+      // (DNS, CORS, offline). Any of those is decisive on its own.
+      const decisive = isDecisive(status);
+      if (decisive || !mapLoaded) tileFailures++;
+      if (decisive || tileFailures >= 3) {
+        // A refusal fired while we were mid-switch would otherwise be swallowed
+        // by the cooldown and leave us parked on a dead host.
+        if (switching) pendingSwitch = status === null ? "error" : status;
+        else switchProvider(status === null ? "error" : status);
+      }
+    });
+
+    armLoadTimeout();   // safety net: never sit on a blank map for ever
 
     map.on("moveend", renderStats);
 
@@ -203,36 +497,172 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => applyIndiaLock(map), 250);
     });
+  }
 
-    locateUser();
+  /* Runs once the map can actually draw: "load" for the first style, "idle"
+     after a failover. */
+  /* Positive proof a tile really arrived: a 200 from this provider's own host.
+     (transferSize/decodedBodySize are 0 cross-origin without Timing-Allow-Origin,
+     but responseStatus is exposed — 200 when a tile loads, 0 when it's refused.) */
+  function tilesArrived() {
+    try {
+      const host = TILE_PROVIDERS[providerIndex].host;
+      return performance.getEntriesByType("resource").some(
+        (e) => e.name.indexOf(host) >= 0 && e.responseStatus === 200
+      );
+    } catch (e) { return false; }
+  }
+
+  /* areTilesLoaded() on its own lies: when every request fails the queue is
+     empty, so it reports "loaded". A host is only trustworthy when nothing is
+     pending AND nothing was refused since we switched to it. */
+  function mapLooksPainted() {
+    if (!map || !map.getStyle()) return false;
+    try { return map.areTilesLoaded() && tileFailures === 0; }
+    catch (e) { return false; }
+  }
+
+  /* Failed tile requests switch providers instantly (see the error handler).
+     This only catches the silent case: a style that loads but never paints.
+     A host that is merely slow keeps getting chances; a refused one doesn't. */
+  function armPaintCheck() {
+    clearTimeout(tilesDeadline);
+    paintChecks = 0;
+    paintStart = Date.now();
+    tilesDeadline = setTimeout(paintCheck, 300);
+  }
+
+  function paintCheck() {
+    if (mapLoaded || !map) return;
+    if (tilesArrived()) { mapReady(); return; }          // a tile genuinely loaded
+    // Browsers that don't expose responseStatus fall back to the weaker signal,
+    // but only after a short grace period so an empty request queue can't
+    // masquerade as a painted map.
+    if (Date.now() - paintStart > 4000 && mapLooksPainted()) { mapReady(); return; }
+    if (tileFailures === 0 && paintChecks < 50) {        // slow network, not a refusal
+      paintChecks++;
+      tilesDeadline = setTimeout(paintCheck, 400);
+      return;
+    }
+    switchProvider("no tiles painted");
+  }
+
+  function mapReady() {
+    if (mapLoaded || !map) return;
+    // Never call the map ready on an empty or refused style.
+    const st = map.getStyle();
+    if (!st || !st.sources || !Object.keys(st.sources).length) return;
+    mapLoaded = true;
+    ensureDiseaseLayers();
+    applyIndiaLock(map);
+    renderMarkers();
     $("mapLoading").classList.add("hide");
+    console.info("[PandeMApp] basemap: " + TILE_PROVIDERS[providerIndex].label);
+    try { localStorage.setItem(TILE_STORE_KEY, TILE_PROVIDERS[providerIndex].id); } catch (e) { /* private mode */ }
+    if (providerIndex > 0) {
+      const forced = new URLSearchParams(location.search).get("tiles");
+      if (!forced) {
+        toast("Default map tiles are blocked here — using " + TILE_PROVIDERS[providerIndex].label + " instead.", "info");
+      }
+    }
+    locateUser();
+  }
+
+  /* Our halo source/layers live on top of the basemap style, so a setStyle
+     (provider swap) wipes them. Re-add and re-feed them whenever that happens. */
+  function ensureDiseaseLayers() {
+    if (!map || !map.getStyle()) return;
+    if (!map.getSource("disease-areas")) {
+      map.addSource("disease-areas", { type: "geojson", data: circleData });
+      map.addLayer({
+        id: "disease-areas-fill", type: "fill", source: "disease-areas",
+        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.16 }
+      });
+      map.addLayer({
+        id: "disease-areas-line", type: "line", source: "disease-areas",
+        paint: { "line-color": ["get", "color"], "line-width": 1, "line-opacity": 0.55 }
+      });
+      circleDirty = false;
+    } else if (circleDirty) {
+      map.getSource("disease-areas").setData(circleData);
+      circleDirty = false;
+    }
+  }
+
+  /* Move to the next tile host. Called on 403/429 tile responses, on any error
+     before the first successful draw, and by the 20 s timeout. */
+  let loadTimer = null;
+  function armLoadTimeout() {
+    clearTimeout(loadTimer);
+    loadTimer = setTimeout(() => { if (!mapLoaded) switchProvider("timeout"); }, 20000);
+  }
+
+  function switchProvider(reason) {
+    if (switching || !map) return;
+    if (providerIndex >= TILE_PROVIDERS.length - 1) {
+      if (gaveUp) return;
+      gaveUp = true;
+      const el = $("mapLoading");
+      el.classList.remove("hide");
+      el.innerHTML =
+        '<div class="map-fallback">' +
+        "<h3>Map tiles are blocked on this network</h3>" +
+        "<p>Every map provider we tried was refused. Reporting still works — " +
+        "open a report and pick your location on the picker map.</p>" +
+        '<button class="btn ghost" id="retryTilesBtn">Try the map again</button>' +
+        "</div>";
+      const btn = $("retryTilesBtn");
+      if (btn) btn.addEventListener("click", () => { gaveUp = false; providerIndex = 0; tileFailures = 0; map.setStyle(styleFor(TILE_PROVIDERS[0])); });
+      return;
+    }
+    switching = true;
+    tileFailures = 0;
+    clearTimeout(tilesDeadline);
+    const from = TILE_PROVIDERS[providerIndex];
+    providerIndex++;
+    const to = TILE_PROVIDERS[providerIndex];
+    try { localStorage.removeItem(TILE_STORE_KEY); } catch (e) { /* private mode */ }
+    console.warn("[PandeMApp] basemap " + from.id + " unusable (" + reason + ") → switching to " + to.id);
+    try {
+      map.setStyle(styleFor(to));
+      if (pickerMap) pickerMap.setStyle(styleFor(to));
+    } catch (err) {
+      console.warn("[PandeMApp] setStyle failed:", err && err.message);
+    }
+    setCredit(to);
+    setTimeout(() => {
+      switching = false;
+      if (pendingSwitch !== null) {
+        const reason = pendingSwitch;
+        pendingSwitch = null;
+        switchProvider(reason);
+      }
+    }, 1500);
+    armLoadTimeout();
   }
 
   function locateUser() {
-    if (!navigator.geolocation) {
-      $("geoBanner").classList.add("show");
-      return;
-    }
+    if (!navigator.geolocation) { $("geoBanner").classList.add("show"); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const j = jitter(pos.coords.latitude, pos.coords.longitude, 150);
         userLatLng = { lat: j.lat, lng: j.lng };
-        map.setView([j.lat, j.lng], 14);
-        const pulse = L.divIcon({
-          className: "",
-          html: '<div class="pulse-marker"><div class="ring"></div><div class="dot"></div></div>',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8]
-        });
-        if (userMarker) map.removeLayer(userMarker);
-        userMarker = L.marker([j.lat, j.lng], { icon: pulse })
-          .addTo(map)
-          .bindPopup("<b>Your approximate location</b><br><span class='pop-meta'>Jittered by ~150 m for privacy.</span>");
+        map.flyTo({ center: [j.lng, j.lat], zoom: 13 });
+        if (userMarker) userMarker.remove();
+        const pulse = document.createElement("div");
+        pulse.className = "pulse-marker";
+        pulse.innerHTML = '<div class="ring"></div><div class="dot"></div>';
+        userMarker = new maplibregl.Marker({ element: pulse })
+          .setLngLat([j.lng, j.lat])
+          .setPopup(
+            new maplibregl.Popup({ closeButton: false, offset: 12 }).setHTML(
+              "<b>Your approximate location</b><br><span class='pop-meta'>Jittered by ~150 m for privacy.</span>"
+            )
+          )
+          .addTo(map);
         renderStats();
       },
-      () => {
-        $("geoBanner").classList.add("show");
-      },
+      () => { $("geoBanner").classList.add("show"); },
       { timeout: 8000, maximumAge: 60000 }
     );
   }
@@ -244,32 +674,49 @@
   }
 
   function renderMarkers() {
-    if (!map) return;
-    layerGroups.disease.clearLayers();
-    layerGroups.risk.clearLayers();
+    if (!map || !mapLoaded) return;   // re-runs from the map "load" handler
+    markers.forEach((m) => m.remove());
+    markers = [];
     markerIndex.clear();
 
+    const features = [];
     allReports
       .filter((r) => visibleTypes.has(r.type) && withinTimeWindow(r))
       .forEach((r) => {
         const t = typeInfo(r.type);
-        const group = layerGroups[t.category] || layerGroups.risk;
+        // Illness reports get a blurred disc so the exact spot stays private.
+        if (t.category === "disease") features.push(circleFeature(r, 150, t.color));
 
-        // Illness reports get a blurred circle so the exact spot stays private.
-        if (t.category === "disease") {
-          L.circle([r.lat, r.lng], {
-            radius: 150,
-            color: t.color,
-            weight: 1,
-            fillColor: t.color,
-            fillOpacity: 0.16
-          }).addTo(group);
-        }
-
-        const marker = L.marker([r.lat, r.lng], { icon: pinIcon(r.type) }).addTo(group);
-        marker.bindPopup(popupHtml(r), { maxWidth: 260 });
+        const popup = new maplibregl.Popup({ maxWidth: "260px", offset: 16 }).setHTML(popupHtml(r));
+        const marker = new maplibregl.Marker({ element: pinElement(r.type), anchor: "bottom" })
+          .setLngLat([r.lng, r.lat])
+          .setPopup(popup)
+          .addTo(map);
+        markers.push(marker);
         markerIndex.set(r.id, { layer: marker, report: r });
       });
+
+    circleData = { type: "FeatureCollection", features };
+    circleDirty = true;
+    ensureDiseaseLayers();
+  }
+
+  /* MapLibre has no metre-based circle layer, so build a 150 m polygon — the
+     illness blur then stays accurate at every zoom level. */
+  function circleFeature(r, radius, color) {
+    const steps = 40;
+    const coords = [];
+    const dLat = radius / 111320;
+    const dLng = radius / (111320 * Math.cos((r.lat * Math.PI) / 180));
+    for (let i = 0; i <= steps; i++) {
+      const a = (i / steps) * Math.PI * 2;
+      coords.push([r.lng + Math.cos(a) * dLng, r.lat + Math.sin(a) * dLat]);
+    }
+    return {
+      type: "Feature",
+      properties: { color: color },
+      geometry: { type: "Polygon", coordinates: [coords] }
+    };
   }
 
   function popupHtml(r) {
@@ -284,13 +731,14 @@
         (sev ? " · " + sev : "") + " · " + timeAgo(r.createdAt) + "</div>" +
       '<div class="pop-meta">📍 ~' + dist + " away</div>" +
       (r.note ? '<div class="pop-note">' + escapeHtml(r.note) + "</div>" : "") +
+      (photoUrl(r.photo) ? '<img class="pop-photo" data-photoid="' + r.id + '" src="' + photoUrl(r.photo) + '" alt="Photo attached to this report" />' : "") +
       '<div class="pop-actions">' +
-        (mine ? '<a href="#" class="link-btn" data-withdraw="' + r.id + '">Withdraw my report</a>' : "") +
+        (withdrawControl(r, mine).replace(/data-del=/, "data-withdraw=")) +
       "</div>"
     );
   }
 
-  // Withdraw links live inside Leaflet popups, so delegate from the map container.
+  // Withdraw links live inside map popups, so delegate from the document.
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-withdraw]");
     if (!el) return;
@@ -374,10 +822,11 @@
               "</div>" +
               '<div class="f-meta">' + timeAgo(r.createdAt) + " · 📍 " + dist + " away" + (sev ? " · " + sev : "") + "</div>" +
               (r.note ? '<div class="f-note">' + escapeHtml(r.note) + "</div>" : "") +
+              (photoUrl(r.photo) ? '<img class="f-photo" data-photoid="' + r.id + '" src="' + photoUrl(r.photo) + '" alt="Photo attached to this report" />' : "") +
             "</div>" +
             '<div class="f-actions">' +
               '<button class="link-btn" data-goto="' + r.id + '">Show on map</button>' +
-              (mine ? '<button class="link-btn" data-del="' + r.id + '">Withdraw</button>' : "") +
+              withdrawControl(r, mine) +
             "</div>" +
           "</div>"
         );
@@ -402,8 +851,11 @@
       toast("That report is hidden by your current filters.", "info");
       return;
     }
-    map.setView(entry.layer.getLatLng(), Math.max(map.getZoom(), 15));
-    entry.layer.openPopup();
+    map.flyTo({ center: entry.layer.getLngLat(), zoom: Math.max(map.getZoom(), 14), speed: 1.2 });
+    // Don't wait for moveend: if the map is already there, no move happens and
+    // the popup would never open.
+    const popup = entry.layer.getPopup();
+    setTimeout(() => { if (popup && !popup.isOpen()) entry.layer.togglePopup(); }, 400);
     document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
@@ -499,6 +951,7 @@
     $("modalIcon").style.background = t.color + "22";
     $("modalTitle").textContent = "Report: " + t.label;
     $("modalSub").textContent = t.blurb;
+    $("photoHint").textContent = photoHintFor(t.category);
     buildSeverity(t.category);
   }
 
@@ -519,29 +972,32 @@
 
   /* ---------- picker map inside the modal ---------- */
   function ensurePickerMap() {
-    if (pickerMap || typeof L === "undefined") return;
-    pickerMap = L.map("pickerMap", {
-      zoomControl: true,
-      attributionControl: false,
-      zoomSnap: 0.5,
-      minZoom: 4,
+    if (pickerMap || typeof maplibregl === "undefined") return;
+    pickerMap = new maplibregl.Map({
+      container: "pickerMap",
+      style: styleFor(TILE_PROVIDERS[providerIndex]),
+      center: INDIA_CENTER,
+      zoom: 4,
+      minZoom: 3,
       maxZoom: 18,
       maxBounds: INDIA_BOUNDS,
-      maxBoundsViscosity: 1.0
+      attributionControl: false
     });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      minZoom: 3, maxZoom: 19, bounds: INDIA_BOUNDS, noWrap: true
-    }).addTo(pickerMap);
-
-    pickerMap.on("click", (e) => {
-      setPickerPoint(e.latlng.lat, e.latlng.lng);
-    });
+    if (!$("pickerCredit")) {
+      const credit = document.createElement("div");
+      credit.className = "map-credit small";
+      credit.id = "pickerCredit";
+      $("pickerMap").appendChild(credit);
+    }
+    setCredit(TILE_PROVIDERS[providerIndex]);
+    pickerMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    pickerMap.on("click", (e) => setPickerPoint(e.lngLat.lat, e.lngLat.lng));
   }
 
   function setPickerPoint(lat, lng) {
     pendingCoords = { lat, lng };
-    if (pickerMarker) pickerMap.removeLayer(pickerMarker);
-    pickerMarker = L.marker([lat, lng]).addTo(pickerMap);
+    if (pickerMarker) pickerMarker.remove();
+    pickerMarker = new maplibregl.Marker({ color: "#1565D8" }).setLngLat([lng, lat]).addTo(pickerMap);
     $("locReadout").textContent = lat.toFixed(4) + ", " + lng.toFixed(4) + " ✓ pin placed";
   }
 
@@ -551,16 +1007,17 @@
     $("reportModal").classList.add("show");
     $("noteInput").value = "";
     $("charCount").textContent = "0";
+    setPendingPhoto(null);            // never carry a photo into the next report
     selectType(typeKey || "stagnant_water");
 
     setTimeout(() => {
-      pickerMap.invalidateSize();
-      let center = DEFAULT_CENTER;
-      let zoom = 5;
-      if (pendingCoords) { center = [pendingCoords.lat, pendingCoords.lng]; zoom = 16; }
-      else if (userLatLng) { center = [userLatLng.lat, userLatLng.lng]; zoom = 16; }
-      else if (map) { center = map.getCenter(); zoom = Math.max(map.getZoom(), 13); }
-      pickerMap.setView(center, zoom);
+      pickerMap.resize();                 // the container was hidden while it mounted
+      let center = INDIA_CENTER;          // [lng, lat]
+      let zoom = 4;
+      if (pendingCoords) { center = [pendingCoords.lng, pendingCoords.lat]; zoom = 16; }
+      else if (userLatLng) { center = [userLatLng.lng, userLatLng.lat]; zoom = 16; }
+      else if (map) { const c = map.getCenter(); center = [c.lng, c.lat]; zoom = Math.max(map.getZoom(), 13); }
+      pickerMap.jumpTo({ center: center, zoom: zoom });
       applyIndiaLock(pickerMap);          // picker is India-locked too
       if (pendingCoords) setPickerPoint(pendingCoords.lat, pendingCoords.lng);
     }, 260);
@@ -589,6 +1046,7 @@
       lng: j.lng,
       note: $("noteInput").value.trim(),
       severity: selectedSeverity,
+      photo: pendingPhoto,
       userId: currentUserId(),
       displayName: currentUser ? currentUser.displayName || "Signed-in user" : "Guest"
     });
@@ -597,9 +1055,11 @@
     btn.textContent = "Submit report";
 
     if (res.savedTo === "firestore") {
-      toast("✅ Report added — it's live on the map.", "success");
+      toast(res.photoDropped
+        ? "✅ Report added — the database rejected the photo, so it saved without one."
+        : "✅ Report added — it's live on the map.", "success");
     } else {
-      toast("⚠️ Saved on this device.", "error");
+      toast("⚠️ Saved on this device (cloud write blocked). See README to enable Firestore.", "error");
     }
 
     closeReportModal();
@@ -618,14 +1078,11 @@
     const mine = allReports.filter((r) => r.userId === myId).length;
     if (signedIn) {
       $("panelReports").textContent = mine;
-      $("profileOpenBtn").innerHTML = currentUser.photoURL
-        ? '<img src="' + currentUser.photoURL + '" alt="">'
-        : "👤";
     } else {
       $("guestReports").textContent = mine;
       $("guestStorage").textContent = Store.getMode() === "firestore" ? "Cloud database" : "This browser";
-      $("profileOpenBtn").innerHTML = "👤";
     }
+    setAvatar(signedIn ? currentUser : null);
   }
 
   async function syncUserProfile(user) {
@@ -648,7 +1105,7 @@
       }
     } catch (err) {
       // Non-fatal: profile sync is a nice-to-have, reporting still works.
-      console.warn("[PANDEM] Profile sync failed:", err && err.code);
+      console.warn("[PandeMApp] Profile sync failed:", err && err.code);
     }
   }
 
@@ -658,8 +1115,8 @@
     auth.onAuthStateChanged(async (user) => {
       currentUser = user || null;
       if (user) {
-        $("panelAvatar").src = user.photoURL || "";
-        $("panelName").textContent = user.displayName || "PANDEM user";
+        setAvatar(user);
+        $("panelName").textContent = user.displayName || "PandeMApp user";
         $("panelEmail").textContent = user.email || "";
         const created = user.metadata && user.metadata.creationTime
           ? new Date(user.metadata.creationTime)
@@ -685,8 +1142,8 @@
         await auth.signInWithPopup(fb.provider);
         toast("Signed in. Your reports are now linked to your account.", "success");
       } catch (err) {
-        console.warn("[PANDEM] Sign-in failed:", err && err.code, err && err.message);
-        toast("Sign-in failed — you can keep using PANDEM as a guest.", "error");
+        console.warn("[PandeMApp] Sign-in failed:", err && err.code, err && err.message);
+        toast("Sign-in failed — you can keep using PandeMApp as a guest.", "error");
       } finally {
         btn.disabled = false;
         btn.textContent = old;
@@ -716,9 +1173,10 @@
   function updateModeChip(meta) {
     const chip = $("modeChip");
     const live = meta.mode === "firestore";
-    chip.classList.toggle("local", !live);
-    $("modeChipText").textContent = live ? "Live database" : "Browser only";
-    $("sourceText").textContent = live ? "shared cloud database" : "this browser (local demo)";
+    const offline = live && meta.offline;
+    chip.classList.toggle("local", !live || offline);
+    $("modeChipText").textContent = !live ? "This browser only" : (offline ? "Offline — will sync" : "Live database");
+    $("sourceText").textContent = !live ? "this browser (local demo)" : (offline ? "queued, syncs when online" : "shared cloud database");
     chip.title = live
       ? "Reports are shared with everyone through Firestore."
       : "Firestore is unreachable or blocked by security rules — reports are stored locally. See firestore.rules in the README.";
@@ -742,6 +1200,35 @@
     $("modalCloseBtn").addEventListener("click", closeReportModal);
     $("cancelReportBtn").addEventListener("click", closeReportModal);
     $("submitReportBtn").addEventListener("click", submitReport);
+    $("photoPickBtn").addEventListener("click", () => $("photoInput").click());
+    $("photoRemoveBtn").addEventListener("click", () => setPendingPhoto(null));
+    $("photoInput").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { toast("That file isn't an image.", "error"); return; }
+      const btn = $("photoPickBtn");
+      btn.disabled = true;
+      btn.textContent = "⏳ Processing…";
+      try {
+        setPendingPhoto(await compressImage(file));
+        toast("Photo ready — " + Math.round(pendingPhoto.length / 1024) + " KB after compressing.", "success");
+      } catch (err) {
+        toast(err && err.message ? err.message : "Could not read that image.", "error");
+        setPendingPhoto(null);
+      }
+      btn.disabled = false;
+    });
+
+    // Photos open in a lightbox; the id keeps data URLs out of the DOM attributes.
+    document.addEventListener("click", (e) => {
+      const thumb = e.target.closest("[data-photoid]");
+      if (!thumb) return;
+      e.stopPropagation();
+      openLightbox(thumb.getAttribute("data-photoid"));
+    });
+    $("lbCloseBtn").addEventListener("click", closeLightbox);
+    $("lightbox").addEventListener("click", (e) => { if (e.target.id !== "lightboxImg") closeLightbox(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeLightbox(); closePanels(); } });
 
     $("noteInput").addEventListener("input", (e) => {
       $("charCount").textContent = e.target.value.length;
@@ -754,7 +1241,7 @@
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           btn.innerHTML = "📍 Use my location";
-          pickerMap.setView([pos.coords.latitude, pos.coords.longitude], 17);
+          pickerMap.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 16 });
           setPickerPoint(pos.coords.latitude, pos.coords.longitude);
           $("geoBanner").classList.remove("show");
         },
@@ -776,7 +1263,7 @@
     });
 
     $("locateBtn").addEventListener("click", () => {
-      if (userLatLng) map.setView([userLatLng.lat, userLatLng.lng], 14);
+      if (userLatLng) map.flyTo({ center: [userLatLng.lng, userLatLng.lat], zoom: 13 });
       else {
         locateUser();
         toast("Turn on location access, or use “Pick on map” in the report form.", "info");
@@ -817,13 +1304,13 @@
     }
     try {
       await db.collection("diagnostics").doc("test-write").set({
-        message: "hello from PANDEM",
+        message: "hello from PandeMApp",
         uid: currentUserId(),
         writtenAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       toast("✅ Firestore write succeeded.", "success");
     } catch (err) {
-      console.warn("[PANDEM] Diagnostics write failed:", err);
+      console.warn("[PandeMApp] Diagnostics write failed:", err);
       toast("❌ Firestore write failed: " + (err.code || err.message), "error");
     }
   }
@@ -831,6 +1318,15 @@
   /* Small debug handle — handy in the browser console and for automated checks. */
   window.__healthmap = {
     getMap: () => map,
+    isLoaded: () => mapLoaded,
+    getProvider: () => TILE_PROVIDERS[providerIndex].id,
+    setAvatar: (user) => setAvatar(user),   // lets the signed-in look be checked without a Google login
+    getProviderState: () => ({ index: providerIndex, switching: switching, failures: tileFailures, gaveUp: gaveUp, mapLoaded: mapLoaded }),
+    getProviderLog: () => providerLog.slice(),
+    forceProvider: (id) => {
+      const i = TILE_PROVIDERS.findIndex((p) => p.id === id);
+      if (i >= 0 && map) { providerIndex = i; map.setStyle(styleFor(TILE_PROVIDERS[i])); setCredit(TILE_PROVIDERS[i]); }
+    },
     getReports: () => allReports,
     getMode: () => Store.getMode(),
     INDIA_BOUNDS

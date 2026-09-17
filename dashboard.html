@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PANDEM - Pandemic Mapping</title>
+<title>PandeMApp - Pandemic Mapping</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.css" />
 <link rel="stylesheet" href="dashboard.css" />
 </head>
 <body>
@@ -15,7 +15,7 @@
 <header class="navbar">
   <div class="brand">
     <div class="brand-mark">♥</div>
-    <span class="brand-name">PANDEM<small>Pandemic Mapping</small></span>
+    <span class="brand-name">PandeMApp<small>Pandemic Mapping</small></span>
   </div>
 
   <div class="nav-right">
@@ -41,7 +41,8 @@
       <div class="geo-banner" id="geoBanner">📍 Location access is off. Use “Pick on map” to drop a pin manually.</div>
 
       <!-- the only thing left on the map itself -->
-      <button class="locate-btn" id="locateBtn">📍<span>Re-center</span></button>
+      <div class="map-credit" id="mapCredit"></div>
+    <button class="locate-btn" id="locateBtn">📍<span>Re-center</span></button>
     </div>
 
     <!-- Stats, filters and the legend now live in this bar UNDER the map,
@@ -85,7 +86,7 @@
     <div class="section-head">
       <div class="eyebrow">Community reporting</div>
       <h2>Report an issue</h2>
-      <p>Six options — pick the one that fits. Your report is on the map within seconds, so neighbours and local teams can act on it.</p>
+      <p>Six options - pick the one that fits. Your report is on the map within seconds, so neighbours and local teams can act on it.</p>
     </div>
 
     <div class="group-title"><span class="g-ic">🩺</span> Mosquito-borne illness</div>
@@ -154,8 +155,8 @@
 </main>
 
 <footer>
-  <div class="f-brand"><span>♥</span> PANDEM</div>
-  <div>© 2026 PANDEM - A pandemic mapping prototype for India.</div>
+  <div class="f-brand"><span>♥</span> PandeMApp</div>
+  <div>© 2026 PandeMApp - A pandemic mapping prototype for India.</div>
 </footer>
 
 <!-- ================= PROFILE PANEL ================= -->
@@ -164,7 +165,8 @@
   <button class="close-btn" id="profileCloseBtn">✕</button>
 
   <div id="signedInBlock" style="display:none;">
-    <img class="p-photo" id="panelAvatar" src="" alt="Profile photo">
+    <img class="p-photo" id="panelAvatar" alt="Profile photo" hidden>
+    <div class="guest-avatar" id="panelInitials" hidden>👤</div>
     <h3 id="panelName">—</h3>
     <div class="p-email" id="panelEmail">—</div>
     <div class="p-meta">
@@ -231,9 +233,22 @@
       <div class="char-count"><span id="charCount">0</span>/400</div>
     </div>
 
+    <div class="field">
+      <label id="photoLabel">Add a photo (optional)</label>
+      <p class="loc-hint" id="photoHint"></p>
+      <input type="file" id="photoInput" accept="image/*" class="sr-only" />
+      <div class="photo-row">
+        <button type="button" class="btn btn-ghost" id="photoPickBtn">📷 Add a photo</button>
+        <button type="button" class="btn btn-ghost" id="photoRemoveBtn" hidden>Remove photo</button>
+      </div>
+      <div class="photo-preview" id="photoPreview" hidden>
+        <img id="photoPreviewImg" alt="Preview of the photo you selected" />
+      </div>
+    </div>
+
     <div class="privacy-line">
       <span>🔒</span>
-      <span>We save your pin shifted by up to <b>150 m</b>, so it shows the street — never your doorstep. No name or contact details are attached.</span>
+      <span>We save your pin shifted by up to <b>150 m</b>, so it shows the street — never your doorstep. No name or contact details are attached. Photos are public — crop out faces, names and house numbers.</span>
     </div>
   </div>
 
@@ -243,18 +258,23 @@
   </div>
 </div>
 
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" id="lbCloseBtn" aria-label="Close photo">✕</button>
+  <img id="lightboxImg" alt="Report photo, full size" />
+</div>
+
 <div id="toastHost"></div>
 
 <!-- Firebase (compat SDK) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+<!-- MapLibre GL JS is imported as an ES module inside dashboard.js (v6 ships ESM only) -->
 <script src="firebase-config.js"></script>
 <script src="store.js"></script>
-<script src="dashboard.js"></script>
+<script type="module" src="dashboard.js"></script>
 
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a396f9b65c12a786',t:'MTc4OTEzMjg4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3c723c65c52a836',t:'MTc4OTYzNzkyNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>

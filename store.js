@@ -1,5 +1,5 @@
 /* ============================================================
-   PANDEM — report storage layer
+   PandeMApp — report storage layer
    ------------------------------------------------------------
    One API, two backends:
      • "firestore"  → shared, everyone sees everyone's reports
@@ -25,6 +25,7 @@ window.HealthMapStore = (function () {
   let cloudReports = [];
   let localReports = [];
   let lastError = null;
+  let cloudFromCache = false;
   let unsub = null;
 
   /* ---------- local helpers ---------- */
@@ -34,16 +35,29 @@ window.HealthMapStore = (function () {
       const arr = raw ? JSON.parse(raw) : [];
       return Array.isArray(arr) ? arr : [];
     } catch (e) {
-      console.warn("[PANDEM] Could not read local reports:", e);
+      console.warn("[PandeMApp] Could not read local reports:", e);
       return [];
     }
   }
 
   function writeLocal() {
+    const save = (list) => localStorage.setItem(LS_REPORTS, JSON.stringify(list.slice(0, 500)));
     try {
-      localStorage.setItem(LS_REPORTS, JSON.stringify(localReports.slice(0, 500)));
+      save(localReports);
     } catch (e) {
-      console.warn("[PANDEM] Could not save locally:", e);
+      /* Photos are the only thing big enough to hit the ~5 MB browser quota.
+         Shed them from the oldest reports, then from all of them, rather than
+         losing the reports themselves. */
+      try {
+        save(localReports.map((r, i) => (i < 5 ? r : Object.assign({}, r, { photo: "" }))));
+        console.warn("[PandeMApp] Storage full — dropped photos from older local reports.");
+      } catch (e2) {
+        try {
+          save(localReports.map((r) => Object.assign({}, r, { photo: "" })));
+        } catch (e3) {
+          console.warn("[PandeMApp] Could not save locally:", e3);
+        }
+      }
     }
   }
 
@@ -74,6 +88,7 @@ window.HealthMapStore = (function () {
       lng: Number(data.lng),
       note: data.note || "",
       severity: Number(data.severity) || 1,
+      photo: typeof data.photo === "string" ? data.photo : "",
       userId: data.userId || "unknown",
       displayName: data.displayName || "Community member",
       createdAt
@@ -108,7 +123,7 @@ window.HealthMapStore = (function () {
     const list = merged()
       .filter((r) => isFinite(r.lat) && isFinite(r.lng))
       .sort((a, b) => b.createdAt - a.createdAt);
-    const meta = { mode, lastError, count: list.length };
+    const meta = { mode, lastError, count: list.length, offline: mode === "firestore" && cloudFromCache };
     listeners.forEach((cb) => {
       try { cb(list, meta); } catch (e) { console.error(e); }
     });
@@ -133,7 +148,7 @@ window.HealthMapStore = (function () {
   function degrade(err) {
     lastError = err;
     if (mode !== "local") {
-      console.warn("[PANDEM] Falling back to local mode:", err && err.code, err && err.message);
+      console.warn("[PandeMApp] Falling back to local mode:", err && err.code, err && err.message);
       mode = "local";
       if (unsub) { try { unsub(); } catch (e) { /* ignore */ } unsub = null; }
     }
@@ -158,7 +173,9 @@ window.HealthMapStore = (function () {
         .orderBy("createdAt", "desc")
         .limit(300)
         .onSnapshot(
+          { includeMetadataChanges: true },   // lets us detect "served from cache"
           (qs) => {
+            cloudFromCache = !!qs.metadata.fromCache;
             cloudReports = qs.docs.map((d) => normalize(d.id, d.data()));
             emit();
           },
@@ -182,21 +199,39 @@ window.HealthMapStore = (function () {
       lng: Number(data.lng),
       note: (data.note || "").slice(0, 400),
       severity: Number(data.severity) || 1,
+      photo: typeof data.photo === "string" ? data.photo : "",
       userId: data.userId || guestId(),
       displayName: data.displayName || "Community member"
     };
 
     if (mode === "firestore") {
-      try {
+      const push = async (payload) => {
         const ref = await db.collection("reports").add({
-          ...base,
+          ...payload,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        cloudReports = sortByDate([normalize(ref.id, { ...base, createdAt: new Date() }), ...cloudReports]);
+        cloudReports = sortByDate([normalize(ref.id, { ...payload, createdAt: new Date() }), ...cloudReports]);
         emit();
-        return { ok: true, savedTo: "firestore", id: ref.id };
+        return ref.id;
+      };
+
+      try {
+        return { ok: true, savedTo: "firestore", id: await push(base) };
       } catch (err) {
-        console.warn("[PANDEM] Cloud write failed:", err && err.code, err && err.message);
+        /* The published rules may be an older revision that rejects the photo
+           field (or caps it differently). Retry once without the photo so the
+           report itself is never lost — a report without a picture is far more
+           useful than no report at all. */
+        if (base.photo) {
+          try {
+            console.warn("[PandeMApp] Cloud write rejected with a photo, retrying without it:", err && err.code);
+            const id = await push(Object.assign({}, base, { photo: "" }));
+            return { ok: true, savedTo: "firestore", id: id, photoDropped: true };
+          } catch (err2) {
+            err = err2;
+          }
+        }
+        console.warn("[PandeMApp] Cloud write failed:", err && err.code, err && err.message);
         lastError = err;
         degrade(err);
       }
@@ -240,12 +275,13 @@ window.HealthMapStore = (function () {
 
   function onChange(cb) {
     listeners.add(cb);
-    cb(merged().filter((r) => isFinite(r.lat) && isFinite(r.lng)), { mode, lastError });
+    cb(merged().filter((r) => isFinite(r.lat) && isFinite(r.lng)), { mode, lastError, offline: mode === "firestore" && cloudFromCache });
     return () => listeners.delete(cb);
   }
 
   function getMode() { return mode; }
+  function isOffline() { return mode === "firestore" && cloudFromCache; }
   function getLastError() { return lastError; }
 
-  return { init, addReport, removeReport, onChange, getMode, getLastError, guestId };
+  return { init, addReport, removeReport, onChange, getMode, getLastError, isOffline, guestId };
 })();
