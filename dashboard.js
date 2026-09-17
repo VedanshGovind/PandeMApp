@@ -82,69 +82,75 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   const EMPTY_FC = { type: "FeatureCollection", features: [] };
 
   /* ================= basemap providers =================
-     Tile hosts block by IP, region or referrer, and when they do the map turns
-     into a wall of "403 Access blocked". Rather than betting on one host, the
-     map walks this list and keeps the first one that actually returns tiles.
+     Tile hosts refuse traffic for all sorts of reasons — usage policy (OSM),
+     a required API key (CARTO), an IP or region block, or plain rate limiting.
+     When they do, they often don't return an error: they return HTTP 200 with the
+     refusal drawn into the tile, so the map looks "loaded" while showing a notice.
+     So the map walks this list and keeps the first host that genuinely paints.
 
-     Deliberately absent: tile.openstreetmap.org. Its usage policy requires an
-     identifiable User-Agent, which a browser cannot set, so real users get
-     blocked while server-side tests pass — exactly the failure we hit. Every
-     host below is CDN-hosted and browser-friendly.
+     Deliberately absent:
+       • tile.openstreetmap.org — its policy requires an identifiable User-Agent
+         that a browser cannot send, so real users get blocked while server-side
+         tests pass. This is the block we hit first.
+       • CARTO — as of 2026 it serves an "API key required" tile unless you send a
+         key. Enabled below only when CARTO_KEY is filled in.
 
-     Force a provider with ?tiles=<id>  (e.g. ?tiles=carto). The provider that
-     works is remembered in localStorage so the next visit starts there. */
-  const MAPTILER_KEY = "";   // optional: paste a free MapTiler key to use it first
+     Force a provider with ?tiles=<id> (e.g. ?tiles=versatiles). The provider that
+     works is remembered in localStorage, so the next visit starts there. */
+  /* Bump this whenever TILE_PROVIDERS changes. It is printed on load so you can
+     tell, from the browser console alone, whether the browser is running the file
+     you just uploaded or a stale cached copy. */
+  const BUILD_ID = "2026-09-17.2";
 
-  const CARTO_ATTR = '&copy; <a href="https://carto.com/attributions">CARTO</a> ' +
-                     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+  const MAPTILER_KEY = "";   // optional: paste a MapTiler key to put it first
+  const CARTO_KEY = "";      // optional: CARTO now needs a key — paste one to use it
+
+  const OSM_LINK = '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
   const TILE_PROVIDERS = [
     {
       id: "openfreemap", label: "OpenFreeMap", host: "tiles.openfreemap.org",
       style: "https://tiles.openfreemap.org/styles/liberty",
-      attribution: '&copy; <a href="https://openfreemap.org">OpenFreeMap</a> ' +
-                   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    },
-    {
-      id: "carto", label: "CARTO Voyager", host: "basemaps.cartocdn.com",
-      style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
-      attribution: CARTO_ATTR
+      attribution: '&copy; <a href="https://openfreemap.org">OpenFreeMap</a> &copy; ' + OSM_LINK
     },
     {
       id: "versatiles", label: "VersaTiles", host: "tiles.versatiles.org",
       style: "https://tiles.versatiles.org/assets/styles/colorful/style.json",
-      attribution: '&copy; <a href="https://versatiles.org">VersaTiles</a> ' +
-                   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      attribution: '&copy; <a href="https://versatiles.org">VersaTiles</a> &copy; ' + OSM_LINK
     },
     {
-      // Plain raster, no style JSON, no sprite — if this fails the network is
-      // the problem, not the provider.
-      id: "cartoraster", label: "CARTO raster", host: "basemaps.cartocdn.com",
+      // Plain raster on a different network entirely — no style JSON, no sprite,
+      // no key. If this one fails too, the network is the problem, not the host.
+      id: "esri", label: "Esri Streets", host: "server.arcgisonline.com",
       style: {
         version: 8,
         sources: {
-          carto: {
+          esri: {
             type: "raster", tileSize: 256,
-            tiles: [
-              "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-              "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-              "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
-            ],
-            attribution: CARTO_ATTR
+            // note Esri's order is {z}/{y}/{x}
+            tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"]
           }
         },
-        layers: [{ id: "carto", type: "raster", source: "carto" }]
+        layers: [{ id: "esri", type: "raster", source: "esri" }]
       },
-      attribution: CARTO_ATTR
+      attribution: 'Tiles &copy; <a href="https://www.esri.com">Esri</a> &mdash; Source: Esri, TomTom, Garmin, FAO, NOAA, USGS, &copy; ' + OSM_LINK + ' contributors'
     }
   ];
+
+  if (CARTO_KEY) {
+    const key = "?api_key=" + encodeURIComponent(CARTO_KEY);
+    TILE_PROVIDERS.splice(1, 0, {
+      id: "carto", label: "CARTO Voyager", host: "basemaps.cartocdn.com",
+      style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json" + key,
+      attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; ' + OSM_LINK
+    });
+  }
 
   if (MAPTILER_KEY) {
     TILE_PROVIDERS.unshift({
       id: "maptiler", label: "MapTiler", host: "api.maptiler.com",
       style: "https://api.maptiler.com/maps/streets/style.json?key=" + MAPTILER_KEY,
-      attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> ' +
-                   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; ' + OSM_LINK
     });
   }
 
@@ -162,7 +168,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     if (/failed to fetch|networkerror|load failed/i.test(err.message || "")) return 0;
     return null;
   }
-  function isDecisive(status) { return status === 403 || status === 429 || status === 0; }
+  function isDecisive(status) { return status === 401 || status === 402 || status === 403 || status === 429 || status === 0; }
 
   function styleFor(p) { return p.style; }
 
@@ -181,6 +187,15 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   }
 
   /* Pick the starting provider: ?tiles= beats a remembered one. */
+  function announceBuild() {
+    const chain = TILE_PROVIDERS.map((p) => p.id).join(" → ");
+    console.info("%c[PandeMApp] build " + BUILD_ID + "%c  basemap chain: " + chain,
+      "font-weight:bold", "font-weight:normal");
+    if (TILE_PROVIDERS.some((p) => p.id === "carto")) {
+      console.warn("[PandeMApp] CARTO is only included when CARTO_KEY is set — if you see this with an empty key, you are running an old cached dashboard.js.");
+    }
+  }
+
   function initialProviderIndex() {
     const forced = new URLSearchParams(location.search).get("tiles");
     if (forced) {
@@ -189,8 +204,11 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     }
     try {
       const saved = localStorage.getItem(TILE_STORE_KEY);
+      if (!saved) return 0;
       const i = TILE_PROVIDERS.findIndex((p) => p.id === saved);
       if (i >= 0) return i;
+      // remembered a provider that has since been removed (e.g. carto) — forget it
+      localStorage.removeItem(TILE_STORE_KEY);
     } catch (e) { /* private mode */ }
     return 0;
   }
@@ -436,6 +454,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   }
 
   function initMap() {
+    announceBuild();
     if (typeof maplibregl === "undefined") {
       $("mapLoading").innerHTML = "<p>MAP LIBRARY FAILED TO LOAD — CHECK YOUR CONNECTION</p>";
       return;
@@ -451,7 +470,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       minZoom: 3,
       maxZoom: 17,
       maxBounds: INDIA_BOUNDS,     // cannot pan outside India
-      attributionControl: false,   // re-added bottom-left so it clears the locate button
+      attributionControl: false,   // credit is our own element, see setCredit()
       dragRotate: false,
       pitchWithRotate: false
     });
@@ -534,6 +553,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
 
   function paintCheck() {
     if (mapLoaded || !map) return;
+
     if (tilesArrived()) { mapReady(); return; }          // a tile genuinely loaded
     // Browsers that don't expose responseStatus fall back to the weaker signal,
     // but only after a short grace period so an empty request queue can't
