@@ -1,5 +1,5 @@
 /* ============================================================
-   PANDEM — Firebase bootstrap (OPTIONAL sign-in)
+   PandeMApp — Firebase bootstrap (OPTIONAL sign-in)
    ------------------------------------------------------------
    Firebase is initialised if the SDK loaded successfully.
    If it did not (blocked script, offline, bad config), the app
@@ -35,10 +35,10 @@ try {
       : null;
     firebaseReady = !!(auth && db);
   } else {
-    console.warn("[PANDEM] Firebase SDK not loaded — running in local mode.");
+    console.warn("[PandeMApp] Firebase SDK not loaded — running in local mode.");
   }
 } catch (err) {
-  console.warn("[PANDEM] Firebase init failed — running in local mode.", err);
+  console.warn("[PandeMApp] Firebase init failed — running in local mode.", err);
 }
 
 window.HealthMapFirebase = { firebaseReady, auth, db, provider, firebaseConfig };
