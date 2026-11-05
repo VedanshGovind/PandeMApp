@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PandeMApp - Pandemic Mapping</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.css" />
+<link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+
+<header class="navbar">
+  <div class="brand" id="brandHome" role="button" tabindex="0" title="Back to top" aria-label="PandeMApp — back to top">
+    <span class="brand-mark" role="img" aria-label="PandeMApp"></span>
+    <span class="brand-name">PandeMApp<small>Pandemic Mapping</small></span>
+  </div>
+
+  <div class="nav-right">
+    <span class="mode-chip" id="modeChip"><i class="ping"></i><span id="modeChipText">Connecting…</span></span>
+    <button class="btn btn-ghost" id="headerCityBtn"
+       title="Search a city to see recent outbreaks and safety recommendations">
+      <span>🏙️</span><span class="btn-label">City outbreaks</span>
+    </button>
+    <button class="btn btn-primary" id="headerReportBtn"
+       title="Report a disease, a breeding site or an animal-borne disease">
+      <span>📝</span><span class="btn-label">Report an issue</span>
+    </button>
+    <button class="icon-btn" id="profileOpenBtn" title="Account">👤</button>
+  </div>
+</header>
+
+<!-- Always-visible disclaimer -->
+<div class="disclaimer-bar" role="note" id="disclaimerBar">
+  <span class="d-ic" aria-hidden="true">⚠️</span>
+  <p><strong>PandeMApp is not a health advice website.</strong>
+  Reports are submitted by the public and are not verified. Nothing here is medical advice,
+  a diagnosis, or an official outbreak notice. If you feel unwell, see a doctor; in an emergency call <b>112</b>.</p>
+</div>
+
+<nav class="page-nav" aria-label="Page sections">
+  <a href="#how">How it works</a>
+  <a href="#services"> Services</a>
+  <a href="#volunteer">Why volunteer</a>
+</nav>
+
+<main>
+  <!-- ================= MAP ================= -->
+  <section class="map-hero" id="mapSection">
+    <div class="map-shell">
+      <div id="map"></div>
+
+      <div class="map-loading" id="mapLoading">
+        <div class="ring"></div>
+        <p>LOADING COMMUNITY REPORTS…</p>
+      </div>
+
+      <div class="geo-banner" id="geoBanner">📍 Location access is off. Use “Pick on map” to drop a pin manually.</div>
+
+      <!-- the only thing left on the map itself -->
+      <div class="map-credit" id="mapCredit"></div>
+    <button class="locate-btn" id="locateBtn">📍<span>Re-center</span></button>
+    </div>
+
+    <!-- Stats, filters and the legend now live in this bar UNDER the map,
+         so nothing covers the map area any more. -->
+    <div class="map-bar">
+      <div class="bar-row">
+        <span class="stat-inline"><b id="statIllness">0</b> <span id="wordIllness">illnesses</span></span>
+        <span class="stat-inline"><b id="statRisk">0</b> <span id="wordRisk">breeding risks</span></span>
+        <span class="stat-inline"><b id="statWater">0</b> <span id="wordWater">water issues</span></span>
+        <span class="stat-inline"><b id="statAnimal">0</b> <span id="wordAnimal">from animals</span></span>
+        <span class="bar-grow"></span>
+        <span class="bar-meta" id="barMeta">Across India · last 10 days</span>
+        <span class="bar-meta" id="sourceText">—</span>
+      </div>
+
+      <button class="bar-toggle" id="panelToggle">⚙ Filters &amp; legend</button>
+
+      <div class="bar-panel" id="barPanel">
+        <div class="bar-row">
+          <span class="bar-label">Date</span>
+          <select class="time-select" id="timeSelect" aria-label="Show reports from">
+            <option value="10" selected>Last 10 days</option>
+            <option value="3">Last 3 days</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last 12 months</option>
+            <option value="0">All time</option>
+            <option value="custom">Custom dates…</option>
+          </select>
+          <span class="date-range" id="dateRange" hidden>
+            <label class="sr-only" for="dateFrom">From</label>
+            <input type="date" class="date-input" id="dateFrom" />
+            <span class="bar-meta">to</span>
+            <label class="sr-only" for="dateTo">To</label>
+            <input type="date" class="date-input" id="dateTo" />
+          </span>
+        </div>
+
+        <div class="bar-row">
+          <span class="bar-label">Radius</span>
+          <select class="time-select" id="radiusSelect" aria-label="Only show reports within this distance">
+            <option value="0" selected>Anywhere in India</option>
+            <option value="1">Within 1 km</option>
+            <option value="2">Within 2 km</option>
+            <option value="5">Within 5 km</option>
+            <option value="10">Within 10 km</option>
+            <option value="25">Within 25 km</option>
+            <option value="50">Within 50 km</option>
+            <option value="100">Within 100 km</option>
+          </select>
+          <span class="bar-label">of</span>
+          <select class="time-select" id="radiusCenter" aria-label="Measure the radius from">
+            <option value="me">My location</option>
+            <option value="map">Centre of the map</option>
+            <option value="city" disabled>Searched city</option>
+          </select>
+          <span class="bar-meta" id="radiusNote"></span>
+        </div>
+
+        <div class="bar-row">
+          <span class="bar-label">Show</span>
+          <div class="chip-row" id="typeChips"></div>
+        </div>
+
+        <div class="bar-row">
+          <span class="bar-label">Legend</span>
+          <div class="legend-items" id="legendItems"></div>
+          <span class="legend-note">Illness and animal-disease pins are blurred by ~150 m to protect who reported them.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SERVICES: CITY OUTBREAKS ================= -->
+  <section class="block" id="services">
+    <div class="section-head">
+      <div class="eyebrow">Services</div>
+      <h2>Check a city before you go out</h2>
+      <p>Search for a city to see what the community has reported there recently, with general precautions for going out. Community reports only — not an official outbreak status.</p>
+    </div>
+
+    <div class="svc-card">
+      <div class="svc-search">
+        <label class="sr-only" for="cityInput">Search for a city</label>
+        <input type="search" id="cityInput" class="city-input" list="cityList"
+               placeholder="Search a city, e.g. Delhi, Pune, Kochi…" autocomplete="off" />
+        <datalist id="cityList"></datalist>
+        <button class="btn btn-primary" id="citySearchBtn">🔍 Search</button>
+        <button class="btn btn-ghost" id="cityNearMeBtn" title="Use your approximate location">📍 Near me</button>
+      </div>
+      <div class="chip-row svc-quick" id="cityQuick" aria-label="Popular cities"></div>
+      <div class="svc-result" id="cityResult" hidden></div>
+      <p class="svc-empty" id="cityEmpty">Pick a city to see recent community-reported outbreaks and safety recommendations.</p>
+    </div>
+  </section>
+
+  <!-- ================= REPORT (three tabs) ================= -->
+  <section class="block" id="report">
+    <div class="section-head">
+      <div class="eyebrow">Community reporting</div>
+      <h2>Report an issue</h2>
+      <p>Choose what you want to report. Your report is on the map within seconds, so neighbours and local teams can see it.</p>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="What would you like to report?" id="reportTabs">
+      <button class="tab on" role="tab" aria-selected="true" aria-controls="panelIllness" id="tabIllness" data-tab="illness">
+        <span class="tab-ic">🩺</span><span>Diseases</span>
+      </button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="panelRisk" id="tabRisk" data-tab="risk">
+        <span class="tab-ic">💧</span><span>Breeding sites</span>
+      </button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="panelAnimal" id="tabAnimal" data-tab="animal">
+        <span class="tab-ic">🐾</span><span>Animal-borne diseases</span>
+      </button>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panelIllness" aria-labelledby="tabIllness" data-panel="illness">
+      <p class="tab-intro">Mosquito-borne and other fever illnesses in people. Includes a symptom checker to help you pick the closest match — it is not a diagnosis.</p>
+      <div class="report-grid" id="illnessGrid"></div>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panelRisk" aria-labelledby="tabRisk" data-panel="risk" hidden>
+      <p class="tab-intro">Places where mosquitoes can breed or disease can spread: standing water, blocked drains, uncollected garbage.</p>
+      <div class="report-grid" id="riskGrid"></div>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panelAnimal" aria-labelledby="tabAnimal" data-panel="animal" hidden>
+      <p class="tab-intro">Diseases that pass from animals, birds, ticks or mites to people — rabies, Nipah, leptospirosis and others.</p>
+      <div class="report-grid" id="animalGrid"></div>
+    </div>
+  </section>
+
+  <!-- ================= FEED ================= -->
+  <section class="block" id="feed" style="padding-top:0;">
+    <div class="feed-wrap">
+      <div class="feed-head">
+        <h3>Recent community reports</h3>
+        <span class="count" id="feedCount">—</span>
+      </div>
+      <div class="feed-list" id="feedList">
+        <div class="empty-state"><span class="big">🗺️</span>Loading reports…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WHY VOLUNTEER ================= -->
+  <section class="block" id="volunteer" style="padding-top:0;">
+    <div class="volunteer">
+      <div class="v-intro">
+        <div class="eyebrow">Why volunteer</div>
+        <h2>One minute from you can protect a whole street</h2>
+        <p>PandeMApp only works because ordinary people tell it what they see. Official systems often hear about a problem late — your report can be the first signal for your neighbourhood.</p>
+        <a class="btn btn-primary" href="#report" id="volunteerCta">📝 Make a report</a>
+      </div>
+      <ul class="v-list">
+        <li><span class="v-ic">⏱️</span><div><b>Earlier warnings</b><span>A cluster of reports can show a problem days before it appears in formal figures.</span></div></li>
+        <li><span class="v-ic">🎯</span><div><b>Help the right fix reach the right place</b><span>Clear maps help cleanup, fogging and vaccination teams go where they are needed first.</span></div></li>
+        <li><span class="v-ic">💧</span><div><b>Breeding sites are fixable</b><span>A puddle, a blocked drain or a pile of garbage you flag today can be cleared before it breeds mosquitoes.</span></div></li>
+        <li><span class="v-ic">🔒</span><div><b>You stay private</b><span>Pins are shifted by up to 150 m and no name or contact details are attached. No account is needed.</span></div></li>
+        <li><span class="v-ic">🤝</span><div><b>Neighbours look out for each other</b><span>Reports help the people around you decide when to take extra care — and the next person to report builds on yours.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= HOW ================= -->
+  <section class="block" id="how" style="padding-top:0;">
+    <div class="section-head">
+      <div class="eyebrow">How it works</div>
+      <h2>From a puddle to prevention</h2>
+    </div>
+    <div class="timeline">
+      <div class="step">
+        <div class="num">🔍</div>
+        <h4>Explore</h4>
+        <p>See illness reports, breeding risks and animal-disease reports around your neighbourhood.</p>
+      </div>
+      <div class="step">
+        <div class="num">📝</div>
+        <h4>Report</h4>
+        <p>Log a confirmed or suspected case, a water problem that could breed mosquitoes, or a disease caught from an animal.</p>
+      </div>
+      <div class="step">
+        <div class="num">📍</div>
+        <h4>Map</h4>
+        <p>Clusters build a live risk picture so cleanup, fogging and vaccination can be targeted.</p>
+      </div>
+      <div class="step">
+        <div class="num">🌱</div>
+        <h4>Improve</h4>
+        <p>Fewer stagnant-water sites means fewer mosquitoes and fewer cases.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PRIVACY ================= -->
+  <section class="block" id="privacy" style="padding-top:20px;">
+    <div class="privacy">
+      <div>
+        <div class="badge">🔒 Privacy</div>
+        <h2>Your Privacy Matters</h2>
+        <p>Personal identities and exact home locations are not displayed publicly. Health-related reports are intended to be represented approximately or anonymously to help protect user privacy.</p>
+      </div>
+      <div class="glass-note">
+        <strong>Disclaimer:</strong> PandeMApp is <b>not a health advice website</b>. Community-reported information is unverified and should not be considered a medical diagnosis, medical advice, or a government outbreak declaration. The symptom checker and city safety tips are general information only. Always consult a qualified doctor or your local health department, and call 112 in an emergency.
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="f-brand"><span class="f-logo" aria-hidden="true"></span> PandeMApp</div>
+  <div>© 2026 PandeMApp - A pandemic mapping prototype for India.<br>
+    <small>Not a health advice website. Not a substitute for a doctor.</small></div>
+</footer>
+
+<!-- ================= PROFILE PANEL ================= -->
+<div class="overlay" id="overlay"></div>
+<aside class="profile-panel" id="profilePanel">
+  <button class="close-btn" id="profileCloseBtn">✕</button>
+
+  <div id="signedInBlock" style="display:none;">
+    <img class="p-photo" id="panelAvatar" alt="Profile photo" hidden>
+    <div class="guest-avatar" id="panelInitials" hidden>👤</div>
+    <h3 id="panelName">—</h3>
+    <div class="p-email" id="panelEmail">—</div>
+    <div class="p-meta">
+      <div><span>Member since</span><span id="panelCreated" class="mono">—</span></div>
+      <div><span>Last login</span><span id="panelLastLogin" class="mono">—</span></div>
+      <div><span>My reports</span><span id="panelReports" class="mono">0</span></div>
+    </div>
+    <div class="panel-note">You're signed in, so your reports are linked to your account and can be withdrawn from any device.</div>
+  </div>
+
+  <div id="guestBlock" style="display:none;">
+    <div class="guest-avatar">👤</div>
+    <h3>Browsing as guest</h3>
+    <div class="p-email">No account needed — reporting is open to everyone.</div>
+    <div class="p-meta">
+      <div><span>My reports</span><span id="guestReports" class="mono">0</span></div>
+      <div><span>Storage</span><span id="guestStorage" class="mono">—</span></div>
+    </div>
+    <div class="panel-note">Sign in with Google only if you want your reports tied to an account and synced across devices. Nothing else changes.</div>
+  </div>
+
+  <div class="panel-actions">
+    <button class="btn btn-primary" id="googleSignInBtn">Continue with Google</button>
+    <button class="btn btn-danger" id="signOutBtn" style="display:none;">Sign out</button>
+  </div>
+</aside>
+
+<!-- ================= REPORT MODAL ================= -->
+<div class="modal" id="reportModal" role="dialog" aria-modal="true">
+  <div class="modal-head">
+    <div class="m-ic" id="modalIcon">🦟</div>
+    <div>
+      <h3 id="modalTitle">Report an issue</h3>
+      <p id="modalSub">Choose the closest match, then drop a pin on the map.</p>
+    </div>
+    <button class="close-btn" id="modalCloseBtn">✕</button>
+  </div>
+
+  <div class="modal-body">
+    <div class="field">
+      <label id="modalTypeLabel">What are you reporting?</label>
+      <div class="type-grid" id="modalTypeGrid"></div>
+    </div>
+
+    <!-- Symptom checker: shown only when reporting a disease -->
+    <div class="field symptom-box" id="symptomBox" hidden>
+      <label>Symptom checker <span class="opt">(optional)</span></label>
+      <p class="loc-hint">Tick what the patient has. We will suggest the closest match to report — this is <b>not a diagnosis</b>.</p>
+      <div class="sym-grid" id="symptomGrid"></div>
+      <div class="sym-danger" id="symptomDanger" hidden></div>
+      <div class="sym-result" id="symptomResult" aria-live="polite"></div>
+      <p class="sym-disclaimer">General information only, not health advice. Many illnesses share these symptoms — see a doctor for a diagnosis.</p>
+    </div>
+
+    <div class="field">
+      <label id="severityLabel">How severe is it?</label>
+      <div class="seg" id="severitySeg"></div>
+    </div>
+
+    <div class="field">
+      <label>Where is it?</label>
+      <div class="picker-map" id="pickerMap"></div>
+      <div class="loc-row" style="margin-top:8px;">
+        <span class="loc-readout" id="locReadout">No pin dropped yet — tap the map above.</span>
+        <button class="btn btn-ghost" id="useMyLocationBtn" style="padding:8px 12px;font-size:12.5px;">📍 Use my location</button>
+      </div>
+      <p class="loc-hint" style="margin-top:6px;">Tap anywhere on the mini-map to place your pin. <b>Zoom is limited to India.</b></p>
+    </div>
+
+    <div class="field">
+      <label>Details (optional)</label>
+      <textarea class="note-input" id="noteInput" maxlength="400" placeholder="e.g. Water has been standing in the park for a week and mosquitoes are breeding."></textarea>
+      <div class="char-count"><span id="charCount">0</span>/400</div>
+    </div>
+
+    <div class="field">
+      <label id="photoLabel">Add a file (optional)</label>
+      <p class="loc-hint" id="photoHint"></p>
+      <input type="file" id="photoInput" accept="image/*,application/pdf,.pdf" class="sr-only" />
+      <div class="photo-row">
+        <button type="button" class="btn btn-ghost" id="photoPickBtn">📎 Add a file</button>
+        <button type="button" class="btn btn-ghost" id="photoRemoveBtn" hidden>Remove file</button>
+      </div>
+      <div class="photo-preview" id="photoPreview" hidden>
+        <img id="photoPreviewImg" alt="Preview of the image you selected" />
+      </div>
+      <div class="file-chip" id="photoFileChip" hidden></div>
+    </div>
+
+    <div class="privacy-line">
+      <span>🔒</span>
+      <span>We save your pin shifted by up to <b>150 m</b>, so it shows the street — never your doorstep. No name or contact details are attached. Files are public — hide faces, names, ID numbers and house numbers first.</span>
+    </div>
+    <p class="sym-disclaimer">PandeMApp is not a health advice website. Reports are unverified.</p>
+  </div>
+
+  <div class="modal-foot">
+    <button class="btn btn-ghost" id="cancelReportBtn">Cancel</button>
+    <button class="btn btn-primary" id="submitReportBtn">Submit report</button>
+  </div>
+</div>
+
+<!-- ============ ANIMAL-SPREAD REPORT MODAL ============ -->
+<div class="modal" id="animalModal" role="dialog" aria-modal="true">
+  <div class="modal-head">
+    <div class="m-ic" id="animalModalIcon">🐾</div>
+    <div>
+      <h3 id="animalModalTitle">Report an animal-spread disease</h3>
+      <p id="animalModalSub">Choose the disease, then drop a pin on the map.</p>
+    </div>
+    <button class="close-btn" id="animalModalCloseBtn">✕</button>
+  </div>
+
+  <div class="modal-body">
+    <div class="zoo-alert" id="animalRabiesAlert" hidden>
+      <strong>If an animal has bitten or scratched you, get medical care first.</strong>
+      Rabies is almost always fatal once symptoms begin, but it is preventable: wash the
+      wound with soap and running water for 15 minutes, then go to a hospital or clinic
+      for post-exposure vaccination — and immunoglobulin if the wound is deep. Go today,
+      not tomorrow. Filing this report does not replace that.
+    </div>
+
+    <div class="field">
+      <label>Which disease?</label>
+      <div class="type-grid" id="animalTypeGrid"></div>
+    </div>
+
+    <!-- Symptom checker for animal-borne diseases -->
+    <div class="field symptom-box" id="animalSymptomBox">
+      <label>Symptom checker <span class="opt">(optional)</span></label>
+      <p class="loc-hint">Tick what the patient has. We will suggest the closest match to report — this is <b>not a diagnosis</b>.</p>
+      <div class="sym-grid" id="animalSymptomGrid"></div>
+      <div class="sym-danger" id="animalSymptomDanger" hidden></div>
+      <div class="sym-result" id="animalSymptomResult" aria-live="polite"></div>
+      <p class="sym-disclaimer">General information only, not health advice. Many illnesses share these symptoms — see a doctor for a diagnosis.</p>
+    </div>
+
+    <div class="field">
+      <label for="animalExposure">How do you think it spread to you?</label>
+      <select class="time-select animal-select" id="animalExposure">
+        <option value="">Choose one…</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label id="animalSeverityLabel">How certain is it?</label>
+      <div class="seg" id="animalSeveritySeg"></div>
+    </div>
+
+    <div class="field">
+      <label>Where is it?</label>
+      <div class="picker-map" id="animalPickerMap"></div>
+      <div class="loc-row" style="margin-top:8px;">
+        <span class="loc-readout" id="animalLocReadout">No pin dropped yet — tap the map above.</span>
+        <button class="btn btn-ghost" id="animalLocateBtn" style="padding:8px 12px;font-size:12.5px;">📍 Use my location</button>
+      </div>
+      <p class="loc-hint" style="margin-top:6px;">Tap anywhere on the mini-map to place your pin. <b>Zoom is limited to India.</b></p>
+    </div>
+
+    <div class="field">
+      <label>Details (optional)</label>
+      <textarea class="note-input" id="animalNoteInput" maxlength="400"
+        placeholder="e.g. A stray dog bit my neighbour on Tuesday; the wound was washed and he started vaccination the same day."></textarea>
+      <div class="char-count"><span id="animalCharCount">0</span>/400</div>
+    </div>
+
+    <div class="field">
+      <label>Add a file (optional)</label>
+      <p class="loc-hint" id="animalPhotoHint"></p>
+      <input type="file" id="animalPhotoInput" accept="image/*,application/pdf,.pdf" class="sr-only" />
+      <div class="photo-row">
+        <button type="button" class="btn btn-ghost" id="animalPhotoPickBtn">📎 Add a file</button>
+        <button type="button" class="btn btn-ghost" id="animalPhotoRemoveBtn" hidden>Remove file</button>
+      </div>
+      <div class="photo-preview" id="animalPhotoPreview" hidden>
+        <img id="animalPhotoPreviewImg" alt="Preview of the image you selected" />
+      </div>
+      <div class="file-chip" id="animalFileChip" hidden></div>
+    </div>
+
+    <div class="privacy-line">
+      <span>🔒</span>
+      <span>We save your pin shifted by up to <b>150 m</b>, so it shows the street — never your doorstep. No name or contact details are attached. Files are public — hide faces, names, ID numbers and house numbers first.</span>
+    </div>
+    <p class="sym-disclaimer">PandeMApp is not a health advice website. Reports are unverified.</p>
+  </div>
+
+  <div class="modal-foot">
+    <button class="btn btn-ghost" id="animalCancelBtn">Cancel</button>
+    <button class="btn btn-primary" id="animalSubmitBtn">Submit report</button>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" id="lbCloseBtn" aria-label="Close image">✕</button>
+  <img id="lightboxImg" alt="Report image, full size" />
+</div>
+
+<div id="toastHost"></div>
+
+<!-- Firebase (compat SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- MapLibre GL JS is imported as an ES module inside dashboard.js (v6 ships ESM only) -->
+<script src="firebase-config.js"></script>
+<script src="store.js"></script>
+<script type="module" src="dashboard.js?v=20261031a"></script>
+
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a422e7593f2ea716',t:'MTc5MDYwMDEzOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
