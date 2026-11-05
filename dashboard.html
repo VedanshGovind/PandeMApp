@@ -333,12 +333,91 @@
 
     <!-- Symptom checker: shown only when reporting a disease -->
     <div class="field symptom-box" id="symptomBox" hidden>
-      <label>Symptom checker <span class="opt">(optional)</span></label>
-      <p class="loc-hint">Tick what the patient has. We will suggest the closest match to report — this is <b>not a diagnosis</b>.</p>
+      <label>Symptom checker</label>
+      <p class="loc-hint">Tick every symptom the patient has — they are saved with your report. We also suggest the closest match to report; this is <b>not a diagnosis</b>.</p>
       <div class="sym-grid" id="symptomGrid"></div>
       <div class="sym-danger" id="symptomDanger" hidden></div>
       <div class="sym-result" id="symptomResult" aria-live="polite"></div>
+      <div class="sym-extra">
+        <div class="sym-q">
+          <label for="patientSexAtBirth">Sex assigned at birth (for clinical accuracy)</label>
+          <select class="time-select" id="patientSexAtBirth" name="patientSexAtBirth">
+            <option value="">Choose one </option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="symptomLifeStage">Select your current life stage:</label>
+          <select class="time-select" id="symptomLifeStage">
+            <option value="">Choose one </option>
+            <option value="0-1">Infant (Under 1 year)</option>
+            <option value="2-4">Toddler (2 to 4 years)</option>
+            <option value="5-12">Child (5 to 12 years)</option>
+            <option value="13-19">Teenage (13 to 19 years)</option>
+            <option value="20-39">Adult (20 to 39 years)</option>
+            <option value="40-59">Middle Aged (40 to 59 years)</option>
+            <option value="60+">Senior Citizen (60+ years)</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="symptomDuration">How long have the symptoms lasted?</label>
+          <select class="time-select" id="symptomDuration">
+            <option value="">Choose one </option>
+            <option value="today">Started today</option>
+            <option value="1-2">1–2 days</option>
+            <option value="3-5">3–5 days</option>
+            <option value="6-10">6–10 days</option>
+            <option value="10+">More than 10 days</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="symptomTraveled">Have you traveled recently?</label>
+          <select class="time-select" id="symptomTraveled">
+            <option value="">Choose one </option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="symptomContactSick">Have you been in contact with anyone who is sick?</label>
+          <select class="time-select" id="symptomContactSick">
+            <option value="">Choose one </option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="symptomAllergies">Do you have any medication or food allergies?</label>
+          <select class="time-select" id="symptomAllergies">
+            <option value="">Choose one </option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="symptomConfused">Is the person confused, drowsy, or hard to wake up?</label>
+          <select class="time-select" id="symptomConfused">
+            <option value="">Choose one </option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="symptomOther">Any other symptom? <span class="opt">(optional)</span></label>
+          <input type="text" class="sym-input" id="symptomOther" maxlength="80" placeholder="e.g. loss of appetite" />
+        </div>
+      </div>
       <p class="sym-disclaimer">General information only, not health advice. Many illnesses share these symptoms — see a doctor for a diagnosis.</p>
+    </div>
+
+    <!-- Habitat checker: shown only when reporting a breeding site -->
+    <div class="field symptom-box habitat-box" id="habitatBox" hidden>
+      <label>Habitat checker</label>
+      <p class="loc-hint">Answer what you can see at the site — your answers are saved with the report.</p>
+      <div id="habitatQuestions"></div>
+      <div class="hab-result" id="habitatResult" aria-live="polite"></div>
+      <p class="sym-disclaimer">Indicative only, based on your answers — not an official inspection.</p>
     </div>
 
     <div class="field">
@@ -354,12 +433,6 @@
         <button class="btn btn-ghost" id="useMyLocationBtn" style="padding:8px 12px;font-size:12.5px;">📍 Use my location</button>
       </div>
       <p class="loc-hint" style="margin-top:6px;">Tap anywhere on the mini-map to place your pin. <b>Zoom is limited to India.</b></p>
-    </div>
-
-    <div class="field">
-      <label>Details (optional)</label>
-      <textarea class="note-input" id="noteInput" maxlength="400" placeholder="e.g. Water has been standing in the park for a week and mosquitoes are breeding."></textarea>
-      <div class="char-count"><span id="charCount">0</span>/400</div>
     </div>
 
     <div class="field">
@@ -416,11 +489,37 @@
 
     <!-- Symptom checker for animal-borne diseases -->
     <div class="field symptom-box" id="animalSymptomBox">
-      <label>Symptom checker <span class="opt">(optional)</span></label>
-      <p class="loc-hint">Tick what the patient has. We will suggest the closest match to report — this is <b>not a diagnosis</b>.</p>
+      <label>Symptom checker</label>
+      <p class="loc-hint">Tick every symptom the patient has — they are saved with your report. We also suggest the closest match to report; this is <b>not a diagnosis</b>.</p>
       <div class="sym-grid" id="animalSymptomGrid"></div>
       <div class="sym-danger" id="animalSymptomDanger" hidden></div>
       <div class="sym-result" id="animalSymptomResult" aria-live="polite"></div>
+      <div class="sym-extra">
+        <div class="sym-q">
+          <label for="animalSymptomDuration">How long have the symptoms lasted?</label>
+          <select class="time-select" id="animalSymptomDuration">
+            <option value="">Choose one…</option>
+            <option value="today">Started today</option>
+            <option value="1-2">1–2 days</option>
+            <option value="3-5">3–5 days</option>
+            <option value="6-10">6–10 days</option>
+            <option value="10+">More than 10 days</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="animalSymptomPeople">How many people have these symptoms?</label>
+          <select class="time-select" id="animalSymptomPeople">
+            <option value="">Choose one…</option>
+            <option value="1">Just one person</option>
+            <option value="2-5">2–5 people</option>
+            <option value="6+">More than 5 people</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="animalSymptomOther">Any other symptom? <span class="opt">(optional)</span></label>
+          <input type="text" class="sym-input" id="animalSymptomOther" maxlength="80" placeholder="e.g. loss of appetite" />
+        </div>
+      </div>
       <p class="sym-disclaimer">General information only, not health advice. Many illnesses share these symptoms — see a doctor for a diagnosis.</p>
     </div>
 
@@ -444,13 +543,6 @@
         <button class="btn btn-ghost" id="animalLocateBtn" style="padding:8px 12px;font-size:12.5px;">📍 Use my location</button>
       </div>
       <p class="loc-hint" style="margin-top:6px;">Tap anywhere on the mini-map to place your pin. <b>Zoom is limited to India.</b></p>
-    </div>
-
-    <div class="field">
-      <label>Details (optional)</label>
-      <textarea class="note-input" id="animalNoteInput" maxlength="400"
-        placeholder="e.g. A stray dog bit my neighbour on Tuesday; the wound was washed and he started vaccination the same day."></textarea>
-      <div class="char-count"><span id="animalCharCount">0</span>/400</div>
     </div>
 
     <div class="field">
@@ -495,7 +587,7 @@
 <!-- MapLibre GL JS is imported as an ES module inside dashboard.js (v6 ships ESM only) -->
 <script src="firebase-config.js"></script>
 <script src="store.js"></script>
-<script type="module" src="dashboard.js?v=20261031a"></script>
+<script type="module" src="dashboard.js?v=20261105a"></script>
 
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a422e7593f2ea716',t:'MTc5MDYwMDEzOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>

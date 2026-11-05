@@ -1132,7 +1132,9 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     $("modalTitle").textContent = "Report: " + t.label;
     $("modalSub").textContent = t.blurb;
     $("photoHint").textContent = photoHintFor(t.group);
-    $("symptomBox").hidden = t.group !== "illness";   // the checker is for diseases only
+    $("symptomBox").hidden = t.group !== "illness";   // symptom checker: diseases only
+    $("habitatBox").hidden = t.group !== "risk";       // habitat checker: breeding sites only
+    if (t.group === "risk" && habitatChecker) habitatChecker.setType(key);
     buildSeverity(t.category);
   }
 
@@ -1186,11 +1188,10 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     ensurePickerMap();
     $("overlay").classList.add("show");
     $("reportModal").classList.add("show");
-    $("noteInput").value = "";
-    $("charCount").textContent = "0";
     setPendingPhoto(null);            // never carry a file into the next report
     fillModalTypes(typeInfo(typeKey || "stagnant_water").group);
     if (illnessChecker) illnessChecker.reset();
+    if (habitatChecker) habitatChecker.reset();
     selectType(typeKey || "stagnant_water");
 
     setTimeout(() => {
@@ -1214,12 +1215,21 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   async function submitReport() {
     if (!selectedType) { toast("Choose what you're reporting.", "error"); return; }
     if (!pendingCoords) { toast("Tap the mini-map to place your pin.", "error"); return; }
-
+    
     const t = typeInfo(selectedType);
-    const j = jitter(pendingCoords.lat, pendingCoords.lng, 150);
     const btn = $("submitReportBtn");
     btn.disabled = true;
-    btn.textContent = "Submitting…";
+    btn.textContent = "Submitting...";
+
+    const checker = t.group === "illness" ? illnessChecker : habitatChecker;
+    const captured = checker ? checker.collect() : { note: "", extra: {} };
+
+    if (t.group === "illness" && (!captured.extra.symptoms || captured.extra.symptoms.length === 0)) {
+      toast("Please select at least one symptom from the symptom checker.", "error");
+      btn.disabled = false;
+      btn.textContent = "Submit report";
+      return;
+    }
 
     const res = await Store.addReport({
       type: selectedType,
@@ -1227,10 +1237,10 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       label: t.label,
       lat: j.lat,
       lng: j.lng,
-      note: $("noteInput").value.trim(),
+      note: captured.note,
       severity: selectedSeverity,
       photo: imageOf(pendingPhoto),
-      extra: attachmentExtra(pendingPhoto),
+      extra: Object.assign({}, attachmentExtra(pendingPhoto), captured.extra),
       userId: currentUserId(),
       displayName: currentUser ? currentUser.displayName || "Signed-in user" : "Guest"
     });
@@ -1344,8 +1354,6 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     ensureAnimalPickerMap();
     $("overlay").classList.add("show");
     $("animalModal").classList.add("show");
-    $("animalNoteInput").value = "";
-    $("animalCharCount").textContent = "0";
     setAnimalPhoto(null);
     aSeverity = 1;
     aCoords = null;
@@ -1375,13 +1383,24 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     if (!$("animalExposure").value) { toast("Choose how you think it spread to you.", "error"); return; }
     if (!aCoords) { toast("Tap the mini-map to place your pin.", "error"); return; }
     if (aSaving) return;
-
+    
     const t = TYPES[aSelectedType];
     const j = jitter(aCoords.lat, aCoords.lng, 150);
     const btn = $("animalSubmitBtn");
     aSaving = true;
     btn.disabled = true;
-    btn.textContent = "Submitting…";
+    btn.textContent = "Submitting...";
+    
+    const animalCaptured = animalChecker ? animalChecker.collect() : { note: "", extra: {} };
+
+    // ADD THIS VALIDATION BLOCK:
+    if (!animalCaptured.extra.symptoms || animalCaptured.extra.symptoms.length === 0) {
+      toast("Please select at least one symptom from the symptom checker.", "error");
+      aSaving = false;
+      btn.disabled = false;
+      btn.textContent = "Submit report";
+      return;
+    }
 
     const res = await Store.addReport({
       type: aSelectedType,
@@ -1389,7 +1408,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       label: t.label,
       lat: j.lat,
       lng: j.lng,
-      note: $("animalNoteInput").value.trim(),
+      note: animalCaptured.note,
       severity: aSeverity,
       photo: imageOf(aPhoto),
       userId: currentUserId(),
@@ -1399,7 +1418,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
         exposure: $("animalExposure").value,
         exposureLabel: ZOONOTIC_EXPOSURE[$("animalExposure").value],
         onsetDate: ""
-      }, attachmentExtra(aPhoto))
+      }, attachmentExtra(aPhoto), animalCaptured.extra)
     });
 
     aSaving = false;
@@ -1640,10 +1659,20 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
 
   let illnessChecker = null;
   let animalChecker = null;
+  let habitatChecker = null;
 
   function makeSymptomChecker(cfg) {
     const selected = new Set();
     const grid = $(cfg.grid), danger = $(cfg.danger), result = $(cfg.result);
+    const ex = cfg.extras || {};   // ids of the duration / people / other-symptom fields
+
+    function optText(id) {
+      const el = $(id);
+      return el && el.value ? el.options[el.selectedIndex].text : "";
+    }
+    function resetExtras() {
+      ["duration", "people", "other"].forEach((k) => { const el = $(ex[k]); if (el) el.value = ""; });
+    }
 
     function render() {
       grid.innerHTML = cfg.symptoms
@@ -1721,7 +1750,200 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     });
 
     return {
-      reset: function () { selected.clear(); render(); update(); }
+      reset: function () { selected.clear(); render(); update(); resetExtras(); },
+
+      /* What gets saved with the report: structured fields in `extra`, and a
+         readable summary in `note` so the map popups and feed still show it. */
+      collect: function () {
+        const keys = cfg.symptoms.filter((k) => selected.has(k));
+        const duration = $(ex.duration) ? $(ex.duration).value : "";
+        const lifeStage = $(ex.lifeStage) ? $(ex.lifeStage).value : "";
+        const traveled = $(ex.traveled) ? $(ex.traveled).value : "";
+        const contactSick = $(ex.contactSick) ? $(ex.contactSick).value : "";
+        const allergies = $(ex.allergies) ? $(ex.allergies).value : "";
+        const confused = $(ex.confused) ? $(ex.confused).value : "";
+        const other = $(ex.other) ? $(ex.other).value.trim() : "";
+        
+        const parts = [];
+        if (keys.length) parts.push("Symptoms: " + keys.map((k) => SYMPTOMS[k]).join(", "));
+        if (duration) parts.push("Lasting: " + optText(ex.duration));
+        if (lifeStage) parts.push("Life Stage: " + optText(ex.lifeStage));
+        if (traveled) parts.push("Recent Travel: " + optText(ex.traveled));
+        if (contactSick) parts.push("Contact with Sick: " + optText(ex.contactSick));
+        if (allergies) parts.push("Allergies: " + optText(ex.allergies));
+        if (confused) parts.push("Confused/Drowsy: " + optText(ex.confused));
+        if (other) parts.push("Other: " + other);
+        
+        const extra = {};
+        if (keys.length) extra.symptoms = keys;
+        if (duration) extra.symptomDuration = duration;
+        if (lifeStage) extra.symptomLifeStage = lifeStage;
+        if (traveled) extra.symptomTraveled = traveled;
+        if (contactSick) extra.symptomContactSick = contactSick;
+        if (allergies) extra.symptomAllergies = allergies;
+        if (confused) extra.symptomConfused = confused;
+        if (other) extra.otherSymptoms = other;
+        
+        return { note: parts.join(". ").slice(0, 400), extra: extra };
+      }
+    };
+  }
+
+
+  /* ================= habitat checker (breeding sites) =================
+     Only asks about the site itself: where it is, the water, its size, how long it
+     has been like that, and any signs of breeding. The follow-up list changes with
+     the type of site chosen. The risk line is indicative only. */
+  const HABITAT_COMMON = [
+    { key: "setting", label: "Where is the site?", options: [
+      ["open_plot", "Open plot / vacant land"], ["roadside", "Roadside / street"], ["residential", "Homes / lane"],
+      ["rooftop", "Rooftop / terrace"], ["construction", "Construction site"], ["public", "Market / park / public place"]] },
+    { key: "water", label: "Is there standing water?", options: [
+      ["yes", "Yes"], ["no", "No"], ["unsure", "Not sure"]] },
+    { key: "clarity", label: "What does the water look like?", options: [
+      ["clear", "Clear"], ["cloudy", "Cloudy"], ["dirty", "Dirty / foul smell"], ["algae", "Green / algae"]] },
+    { key: "size", label: "How big is the site?", options: [
+      ["small", "Small (bucket, tyre, pot)"], ["medium", "Medium (puddle, tank, drain stretch)"], ["large", "Large (pond, plot, long stretch)"]] },
+    { key: "age", label: "How long has it been like this?", options: [
+      ["lt3", "Under 3 days"], ["3to7", "3–7 days"], ["gt7", "Over a week"], ["unknown", "Don't know"]] },
+    { key: "signs", label: "Signs of mosquito breeding", multi: true, options: [
+      ["larvae", "Wriggling larvae in the water"], ["adults", "Many mosquitoes around"],
+      ["bites", "People bitten nearby"], ["none", "None seen"]] }
+  ];
+
+  const HABITAT_FEATURES = {
+    stagnant_water: { label: "What is holding the water?", options: [
+      ["containers", "Open buckets / containers"], ["tyres", "Old tyres"], ["tanks", "Uncovered tank / cooler"],
+      ["pits", "Pits / potholes"], ["pots", "Plant pots / trays"], ["gutter", "Blocked roof gutter"]] },
+    drainage: { label: "What is wrong with the drain?", options: [
+      ["blocked", "Blocked drain"], ["overflow", "Sewage overflow"], ["open", "Open / uncovered drain"],
+      ["broken", "Broken pipe"], ["slow", "Water barely moving"]] },
+    garbage: { label: "What is in the waste?", options: [
+      ["cans", "Cans, bottles, plastic cups"], ["tyres", "Old tyres"], ["coconut", "Coconut shells"],
+      ["heap", "Large uncollected heap"], ["rainwater", "Rainwater collecting in it"]] }
+  };
+  const HABITAT_SHARED_FEATURES = [["weeds", "Thick plants or weeds nearby"], ["shade", "Shaded spot"]];
+  const HABITAT_SHORT = { setting: "Setting", water: "Standing water", clarity: "Water", size: "Size",
+    age: "Present for", signs: "Signs", features: "Features" };
+
+  function makeHabitatChecker() {
+    const host = $("habitatQuestions"), result = $("habitatResult");
+    let answers = {};                 // question key -> string, or array for multi-select
+    let siteType = "stagnant_water";
+
+    function questions() {
+      const f = HABITAT_FEATURES[siteType] || HABITAT_FEATURES.stagnant_water;
+      return HABITAT_COMMON.concat([{ key: "features", label: f.label, multi: true, options: f.options.concat(HABITAT_SHARED_FEATURES) }]);
+    }
+
+    function isOn(q, v) {
+      const a = answers[q.key];
+      return q.multi ? Array.isArray(a) && a.indexOf(v) >= 0 : a === v;
+    }
+
+    function render() {
+      if (!host) return;
+      host.innerHTML = questions().map((q) =>
+        '<div class="hab-q"><label>' + q.label + (q.multi ? ' <span class="opt">(tick all that apply)</span>' : "") +
+        '</label><div class="sym-grid">' +
+        q.options.map((o) =>
+          '<button type="button" class="sym-chip' + (isOn(q, o[0]) ? " on" : "") + '" data-hq="' + q.key +
+          '" data-hv="' + o[0] + '" aria-pressed="' + isOn(q, o[0]) + '">' + o[1] + "</button>").join("") +
+        "</div></div>").join("");
+    }
+
+    function paint() {
+      const qs = questions();
+      host.querySelectorAll("[data-hq]").forEach((b) => {
+        const q = qs.find((x) => x.key === b.dataset.hq);
+        const on = !!q && isOn(q, b.dataset.hv);
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
+
+    /* Indicative only: standing water, larvae, age and size push it up. */
+    function risk() {
+      let s = 0;
+      const signs = answers.signs || [];
+      if (answers.water === "yes") s += 2; else if (answers.water === "unsure") s += 1;
+      if (signs.indexOf("larvae") >= 0) s += 3;
+      if (signs.indexOf("adults") >= 0) s += 1;
+      if (signs.indexOf("bites") >= 0) s += 1;
+      if (answers.age === "gt7") s += 2; else if (answers.age === "3to7") s += 1;
+      if (answers.size === "large") s += 2; else if (answers.size === "medium") s += 1;
+      if ((answers.features || []).length >= 2) s += 1;
+      return s >= 7 ? "high" : s >= 4 ? "moderate" : "low";
+    }
+
+    function update() {
+      if (!result) return;
+      if (!Object.keys(answers).length) {
+        result.innerHTML = '<div class="sym-empty">Answer a few questions above to see how likely this site is to breed mosquitoes.</div>';
+        return;
+      }
+      const lvl = risk();
+      const text = {
+        low: "Few signs so far. Add anything else you can see.",
+        moderate: "Standing water can become a breeding spot within days, so it is worth reporting.",
+        high: "Larvae, or water that has stood for a long time, make this a likely breeding site. Reporting it helps get it cleared."
+      };
+      result.innerHTML = '<div class="hab-level ' + lvl + '"><strong>Breeding risk looks ' + lvl + "</strong><span>" + text[lvl] + "</span></div>";
+    }
+
+    if (host) {
+      host.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-hq]");
+        if (!b) return;
+        const k = b.dataset.hq, v = b.dataset.hv;
+        const q = questions().find((x) => x.key === k);
+        if (!q) return;
+        if (q.multi) {
+          let a = Array.isArray(answers[k]) ? answers[k].slice() : [];
+          if (a.indexOf(v) >= 0) a = a.filter((x) => x !== v);
+          else if (k === "signs") a = v === "none" ? ["none"] : a.filter((x) => x !== "none").concat(v);
+          else a.push(v);
+          if (a.length) answers[k] = a; else delete answers[k];
+        } else if (answers[k] === v) {
+          delete answers[k];                 // tap again to clear
+        } else {
+          answers[k] = v;
+        }
+        paint();
+        update();
+      });
+    }
+
+    return {
+      reset: function () { answers = {}; render(); update(); },
+
+      /* The list of follow-up options depends on the kind of site. */
+      setType: function (key) {
+        siteType = HABITAT_FEATURES[key] ? key : "stagnant_water";
+        const valid = questions().find((q) => q.key === "features").options.map((o) => o[0]);
+        if (answers.features) {
+          answers.features = answers.features.filter((v) => valid.indexOf(v) >= 0);
+          if (!answers.features.length) delete answers.features;
+        }
+        render();
+        update();
+      },
+
+      collect: function () {
+        const habitat = {}, parts = [];
+        questions().forEach((q) => {
+          const a = answers[q.key];
+          if (a === undefined) return;
+          habitat[q.key] = a;
+          const labelOf = (v) => (q.options.find((o) => o[0] === v) || [v, v])[1];
+          parts.push(HABITAT_SHORT[q.key] + ": " + (Array.isArray(a) ? a.map(labelOf).join(", ") : labelOf(a)));
+        });
+        const has = Object.keys(habitat).length > 0;
+        return {
+          note: has ? ("Habitat — " + parts.join("; ")).slice(0, 400) : "",
+          extra: has ? { habitat: habitat, habitatRisk: risk() } : {}
+        };
+      }
     };
   }
 
@@ -1729,17 +1951,23 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     illnessChecker = makeSymptomChecker({
       grid: "symptomGrid", danger: "symptomDanger", result: "symptomResult",
       symptoms: ILLNESS_SYMPTOM_LIST,
+      // UPDATE THIS LINE to include your new fields:
+      extras: { 
+        duration: "symptomDuration", 
+        lifeStage: "symptomLifeStage", 
+        traveled: "symptomTraveled",
+        contactSick: "symptomContactSick",
+        allergies: "symptomAllergies",
+        confused: "symptomConfused",
+        other: "symptomOther" 
+      },
       candidates: () => typeKeys("illness"),
       onPick: (k) => selectType(k)
     });
-    animalChecker = makeSymptomChecker({
-      grid: "animalSymptomGrid", danger: "animalSymptomDanger", result: "animalSymptomResult",
-      symptoms: ANIMAL_SYMPTOM_LIST,
-      candidates: () => typeKeys("animal").filter((k) => DISEASE_SYMPTOMS[k]),
-      onPick: (k) => selectAnimalType(k)
-    });
+    habitatChecker = makeHabitatChecker();
     illnessChecker.reset();
     animalChecker.reset();
+    habitatChecker.reset();
   }
 
   /* ================= services: city outbreak check =================
@@ -2201,9 +2429,6 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     $("animalModalCloseBtn").addEventListener("click", closeAnimalModal);
     $("animalCancelBtn").addEventListener("click", closeAnimalModal);
     $("animalExposure").addEventListener("change", refreshAnimalAlert);
-    $("animalNoteInput").addEventListener("input", (e) => {
-      $("animalCharCount").textContent = e.target.value.length;
-    });
     wireFileInputs();
     $("animalLocateBtn").addEventListener("click", () => {
       if (!navigator.geolocation) { toast("Location isn't available in this browser.", "error"); return; }
@@ -2237,10 +2462,6 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     $("lbCloseBtn").addEventListener("click", closeLightbox);
     $("lightbox").addEventListener("click", (e) => { if (e.target.id !== "lightboxImg") closeLightbox(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeLightbox(); closePanels(); } });
-
-    $("noteInput").addEventListener("input", (e) => {
-      $("charCount").textContent = e.target.value.length;
-    });
 
     $("useMyLocationBtn").addEventListener("click", () => {
       if (!navigator.geolocation) { toast("Location is not available in this browser.", "error"); return; }

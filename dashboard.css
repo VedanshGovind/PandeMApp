@@ -813,3 +813,30 @@ footer .f-logo{
   .svc-head h3{ font-size:18px; }
   .volunteer h2{ font-size:23px; }
 }
+
+
+/* ============================================================
+   Symptom checker extras + habitat checker
+   ============================================================ */
+.sym-extra{ margin-top:12px; display:grid; gap:10px; }
+.symptom-box .sym-q label,
+.symptom-box .hab-q > label{
+  text-transform:none; letter-spacing:0; font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:5px;
+}
+.symptom-box select.time-select{ width:100%; }
+input.sym-input{
+  width:100%; font:inherit; font-size:13px; padding:8px 10px; border-radius:9px;
+  border:1px solid var(--line); background:var(--white); color:var(--ink);
+}
+input.sym-input:focus{ outline:2px solid rgba(21,101,216,.35); outline-offset:1px; }
+.hab-q{ margin-top:12px; }
+.hab-q .sym-grid{ margin-top:0; }
+.hab-result{ margin-top:12px; }
+.hab-level{
+  display:flex; flex-direction:column; gap:2px; background:var(--white);
+  border:1px solid var(--line); border-left:4px solid var(--green);
+  border-radius:10px; padding:9px 12px; font-size:12.5px; color:var(--ink-soft); line-height:1.5;
+}
+.hab-level strong{ color:var(--navy); text-transform:capitalize; }
+.hab-level.moderate{ border-left-color:var(--orange); }
+.hab-level.high{ border-left-color:var(--red); }
