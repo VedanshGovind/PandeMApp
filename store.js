@@ -1,5 +1,5 @@
 /* ============================================================
-   PandeMApp — report storage layer
+   PandeMApp - report storage layer
    ------------------------------------------------------------
    One API, two backends:
      • "firestore"  → shared, everyone sees everyone's reports
@@ -51,7 +51,7 @@ window.HealthMapStore = (function () {
       const lean = (r) => Object.assign({}, r, { photo: "", attachment: "" });
       try {
         save(localReports.map((r, i) => (i < 5 ? r : lean(r))));
-        console.warn("[PandeMApp] Storage full — dropped files from older local reports.");
+        console.warn("[PandeMApp] Storage full - dropped files from older local reports.");
       } catch (e2) {
         try {
           save(localReports.map(lean));
@@ -82,7 +82,7 @@ window.HealthMapStore = (function () {
     const createdAt = toDate(data.createdAt);
     /* Spread the incoming document first so fields this layer doesn't know about
        (the animal-spread track's `track`, `exposure`, `onsetDate`) survive the
-       round trip — both from Firestore and from local storage. The known fields
+       round trip - both from Firestore and from local storage. The known fields
        below then override the raw values with normalised ones. */
     return {
       ...data,
@@ -231,7 +231,7 @@ window.HealthMapStore = (function () {
         /* The published rules may be an older revision that rejects the photo
            field (or caps it differently), and a PDF attachment adds more bytes
            still. Retry once without the files so the report itself is never
-           lost — a report without a file is far more useful than no report. */
+           lost - a report without a file is far more useful than no report. */
         if (base.photo || base.attachment) {
           try {
             console.warn("[PandeMApp] Cloud write rejected with a file, retrying without it:", err && err.code);
@@ -307,13 +307,13 @@ window.HealthMapStore = (function () {
 window.HealthMapConfig = (function () {
 
 /* ============================================================
-   PandeMApp — shared basemap configuration
+   PandeMApp - shared basemap configuration
    ------------------------------------------------------------
    One source of truth for the tile chain. Both the dashboard map
    and the animal-spread disease form read this, so a provider
    only ever has to be added or removed in one place.
 
-   Tile hosts refuse traffic for all sorts of reasons — usage
+   Tile hosts refuse traffic for all sorts of reasons - usage
    policy (OSM), a required API key (CARTO), an IP or region block,
    or plain rate limiting. When they do, they often don't return an
    error: they return HTTP 200 with the refusal drawn into the tile,
@@ -321,11 +321,11 @@ window.HealthMapConfig = (function () {
    this list and keeps the first host that genuinely paints.
 
    Deliberately absent:
-     • tile.openstreetmap.org — its policy requires an identifiable
+     • tile.openstreetmap.org - its policy requires an identifiable
        User-Agent that a browser cannot send, so real users get
        blocked while server-side tests pass. This is the block we
        hit first.
-     • CARTO — as of 2026 it serves an "API key required" tile unless
+     • CARTO - as of 2026 it serves an "API key required" tile unless
        you send a key. Enabled below only when CARTO_KEY is filled in.
 
    Force a provider with ?tiles=<id> (e.g. ?tiles=versatiles). The
@@ -336,7 +336,7 @@ window.HealthMapConfig = (function () {
 const OSM_LINK = '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 const MAPTILER_KEY = "";   // optional: paste a MapTiler key to put it first
-const CARTO_KEY = "";      // optional: CARTO now needs a key — paste one to use it
+const CARTO_KEY = "";      // optional: CARTO now needs a key - paste one to use it
 
 const TILE_PROVIDERS = [
   {
@@ -350,7 +350,7 @@ const TILE_PROVIDERS = [
     attribution: '&copy; <a href="https://versatiles.org">VersaTiles</a> &copy; ' + OSM_LINK
   },
   {
-    // Plain raster on a different network entirely — no style JSON, no sprite,
+    // Plain raster on a different network entirely - no style JSON, no sprite,
     // no key. If this one fails too, the network is the problem, not the host.
     id: "esri", label: "Esri Streets", host: "server.arcgisonline.com",
     style: {
@@ -407,7 +407,7 @@ function isDecisive(status) {
 function styleFor(p) { return p.style; }
 
 /* ============================================================
-   PandeMApp — animal-spread (zoonotic) disease track
+   PandeMApp - animal-spread (zoonotic) disease track
    ------------------------------------------------------------
    Shared by the dashboard's two report forms: the animal-spread
    form builds its disease cards from this, and the map uses the

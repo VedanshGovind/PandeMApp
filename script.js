@@ -1,4 +1,4 @@
-/* PandeMApp — entry page.
+/* PandeMApp - entry page.
    Google sign-in is optional: guests go straight to the dashboard. */
 
 const googleLoginBtn = document.getElementById("googleLoginBtn");
@@ -12,7 +12,7 @@ function goToDashboard() {
   window.location.href = "dashboard.html";
 }
 
-/* Returning signed-in users skip this page — unless they chose guest mode. */
+/* Returning signed-in users skip this page - unless they chose guest mode. */
 if (hmAuth) {
   hmAuth.onAuthStateChanged((user) => {
     if (user && sessionStorage.getItem("healthmap.guestMode") !== "1") {
@@ -28,7 +28,7 @@ guestBtn.addEventListener("click", () => {
 
 googleLoginBtn.addEventListener("click", async () => {
   if (!hmAuth) {
-    errorMessage.textContent = "Sign-in is unavailable right now — continue as guest.";
+    errorMessage.textContent = "Sign-in is unavailable right now - continue as guest.";
     return;
   }
 
@@ -42,7 +42,7 @@ googleLoginBtn.addEventListener("click", async () => {
     console.error(error);
     errorMessage.textContent =
       error.code === "auth/unauthorized-domain"
-        ? "This domain isn't authorised in Firebase yet — continue as guest for now."
+        ? "This domain isn't authorised in Firebase yet - continue as guest for now."
         : error.message;
     googleLoginBtn.disabled = false;
     googleLoginBtn.innerHTML = "Continue with Google";

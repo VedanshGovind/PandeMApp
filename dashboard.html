@@ -9,22 +9,26 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.css" />
-<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="dashboard.css?v=20261106i" />
 </head>
 <body>
 
+<!-- Disclaimer: top of page, can be dismissed for this visit -->
+<div class="top-disclaimer" role="note" id="disclaimerBar">
+  <div class="disc-pill">
+    <p><span aria-hidden="true">⚠️</span> <strong>Not health advice.</strong> Reports are unverified and are not a diagnosis or an official outbreak notice. Feeling unwell? See a doctor. Emergency: <b>112</b>.</p>
+    <button class="disc-close" id="disclaimerClose" aria-label="Close disclaimer" title="Close">✕</button>
+  </div>
+</div>
+
 <header class="navbar">
-  <div class="brand" id="brandHome" role="button" tabindex="0" title="Back to top" aria-label="PandeMApp — back to top">
+  <div class="brand" id="brandHome" role="button" tabindex="0" title="Back to top" aria-label="PandeMApp - back to top">
     <span class="brand-mark" role="img" aria-label="PandeMApp"></span>
     <span class="brand-name">PandeMApp<small>Pandemic Mapping</small></span>
   </div>
 
   <div class="nav-right">
     <span class="mode-chip" id="modeChip"><i class="ping"></i><span id="modeChipText">Connecting…</span></span>
-    <button class="btn btn-ghost" id="headerCityBtn"
-       title="Search a city to see recent outbreaks and safety recommendations">
-      <span>🏙️</span><span class="btn-label">City outbreaks</span>
-    </button>
     <button class="btn btn-primary" id="headerReportBtn"
        title="Report a disease, a breeding site or an animal-borne disease">
       <span>📝</span><span class="btn-label">Report an issue</span>
@@ -33,23 +37,30 @@
   </div>
 </header>
 
-<!-- Always-visible disclaimer -->
-<div class="disclaimer-bar" role="note" id="disclaimerBar">
-  <span class="d-ic" aria-hidden="true">⚠️</span>
-  <p><strong>PandeMApp is not a health advice website.</strong>
-  Reports are submitted by the public and are not verified. Nothing here is medical advice,
-  a diagnosis, or an official outbreak notice. If you feel unwell, see a doctor; in an emergency call <b>112</b>.</p>
-</div>
-
-<nav class="page-nav" aria-label="Page sections">
-  <a href="#how">How it works</a>
-  <a href="#services"> Services</a>
-  <a href="#volunteer">Why volunteer</a>
-</nav>
-
 <main>
+  <!-- ================= INTRO ================= -->
+  <section class="intro">
+    <div class="intro-text">
+      <span class="intro-eyebrow">Community health map · India</span>
+      <h1>See what's spreading near you - and report what you see.</h1>
+      <p>Live, anonymous reports of illness, mosquito breeding sites and animal-borne disease from people in your area.</p>
+    </div>
+    <ol class="intro-steps" aria-label="How to use PandeMApp">
+      <li><a href="#mapSection"><span class="st-ic">🗺️</span><span><b>Explore the map</b><small>See reports around you</small></span></a></li>
+      <li><a href="#report"><span class="st-ic">📝</span><span><b>Report what you see</b><small>Takes under a minute, no login</small></span></a></li>
+      <li><a href="#services"><span class="st-ic">🏙️</span><span><b>Check a city</b><small>Before you travel or go out</small></span></a></li>
+    </ol>
+  </section>
+
+  <nav class="page-nav" aria-label="Page sections">
+    <a href="#feed">🕒 Recent reports</a>
+    <a href="#how">ℹ️ How it works</a>
+    <a href="#volunteer">🤝 Why volunteer</a>
+  </nav>
+
   <!-- ================= MAP ================= -->
   <section class="map-hero" id="mapSection">
+    <div class="map-layout">
     <div class="map-shell">
       <div id="map"></div>
 
@@ -65,23 +76,25 @@
     <button class="locate-btn" id="locateBtn">📍<span>Re-center</span></button>
     </div>
 
-    <!-- Stats, filters and the legend now live in this bar UNDER the map,
-         so nothing covers the map area any more. -->
-    <div class="map-bar">
-      <div class="bar-row">
-        <span class="stat-inline"><b id="statIllness">0</b> <span id="wordIllness">illnesses</span></span>
-        <span class="stat-inline"><b id="statRisk">0</b> <span id="wordRisk">breeding risks</span></span>
-        <span class="stat-inline"><b id="statWater">0</b> <span id="wordWater">water issues</span></span>
-        <span class="stat-inline"><b id="statAnimal">0</b> <span id="wordAnimal">from animals</span></span>
-        <span class="bar-grow"></span>
-        <span class="bar-meta" id="barMeta">Across India · last 10 days</span>
-        <span class="bar-meta" id="sourceText">—</span>
+    <!-- Everything about the map lives in this side panel: stats, filters, legend -->
+    <aside class="map-side" aria-label="Map statistics, filters and legend">
+      <div class="side-sec">
+        <div class="side-stats">
+          <span class="stat-inline"><b id="statIllness">0</b> <span id="wordIllness">illnesses</span></span>
+          <span class="stat-inline"><b id="statRisk">0</b> <span id="wordRisk">breeding risks</span></span>
+          <span class="stat-inline"><b id="statWater">0</b> <span id="wordWater">water issues</span></span>
+          <span class="stat-inline"><b id="statAnimal">0</b> <span id="wordAnimal">from animals</span></span>
+        </div>
+        <div class="side-meta">
+          <span class="bar-meta" id="barMeta">Across India · last 10 days</span>
+          <span class="bar-meta" id="sourceText">-</span>
+        </div>
       </div>
 
-      <button class="bar-toggle" id="panelToggle">⚙ Filters &amp; legend</button>
+      <button class="bar-toggle" id="panelToggle">⚙ Filters</button>
 
-      <div class="bar-panel" id="barPanel">
-        <div class="bar-row">
+      <div class="bar-panel side-sec" id="barPanel">
+        <div class="side-field">
           <span class="bar-label">Date</span>
           <select class="time-select" id="timeSelect" aria-label="Show reports from">
             <option value="10" selected>Last 10 days</option>
@@ -102,61 +115,40 @@
           </span>
         </div>
 
-        <div class="bar-row">
+        <div class="side-field">
           <span class="bar-label">Radius</span>
-          <select class="time-select" id="radiusSelect" aria-label="Only show reports within this distance">
-            <option value="0" selected>Anywhere in India</option>
-            <option value="1">Within 1 km</option>
-            <option value="2">Within 2 km</option>
-            <option value="5">Within 5 km</option>
-            <option value="10">Within 10 km</option>
-            <option value="25">Within 25 km</option>
-            <option value="50">Within 50 km</option>
-            <option value="100">Within 100 km</option>
-          </select>
-          <span class="bar-label">of</span>
-          <select class="time-select" id="radiusCenter" aria-label="Measure the radius from">
-            <option value="me">My location</option>
-            <option value="map">Centre of the map</option>
-            <option value="city" disabled>Searched city</option>
-          </select>
+          <div class="side-pair">
+            <select class="time-select" id="radiusSelect" aria-label="Only show reports within this distance">
+              <option value="0" selected>Anywhere in India</option>
+              <option value="1">Within 1 km</option>
+              <option value="2">Within 2 km</option>
+              <option value="5">Within 5 km</option>
+              <option value="10">Within 10 km</option>
+              <option value="25">Within 25 km</option>
+              <option value="50">Within 50 km</option>
+              <option value="100">Within 100 km</option>
+            </select>
+            <select class="time-select" id="radiusCenter" aria-label="Measure the radius from">
+              <option value="me">of my location</option>
+              <option value="map">of map centre</option>
+              <option value="city" disabled>of searched city</option>
+            </select>
+          </div>
           <span class="bar-meta" id="radiusNote"></span>
         </div>
 
-        <div class="bar-row">
+        <div class="side-field">
           <span class="bar-label">Show</span>
           <div class="chip-row" id="typeChips"></div>
         </div>
-
-        <div class="bar-row">
-          <span class="bar-label">Legend</span>
-          <div class="legend-items" id="legendItems"></div>
-          <span class="legend-note">Illness and animal-disease pins are blurred by ~150 m to protect who reported them.</span>
-        </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ================= SERVICES: CITY OUTBREAKS ================= -->
-  <section class="block" id="services">
-    <div class="section-head">
-      <div class="eyebrow">Services</div>
-      <h2>Check a city before you go out</h2>
-      <p>Search for a city to see what the community has reported there recently, with general precautions for going out. Community reports only — not an official outbreak status.</p>
-    </div>
-
-    <div class="svc-card">
-      <div class="svc-search">
-        <label class="sr-only" for="cityInput">Search for a city</label>
-        <input type="search" id="cityInput" class="city-input" list="cityList"
-               placeholder="Search a city, e.g. Delhi, Pune, Kochi…" autocomplete="off" />
-        <datalist id="cityList"></datalist>
-        <button class="btn btn-primary" id="citySearchBtn">🔍 Search</button>
-        <button class="btn btn-ghost" id="cityNearMeBtn" title="Use your approximate location">📍 Near me</button>
+      <div class="side-sec side-legend">
+        <span class="bar-label">Legend</span>
+        <div class="legend-items" id="legendItems"></div>
+        <p class="legend-note">Illness and animal-disease pins are blurred by ~150 m to protect who reported them.</p>
       </div>
-      <div class="chip-row svc-quick" id="cityQuick" aria-label="Popular cities"></div>
-      <div class="svc-result" id="cityResult" hidden></div>
-      <p class="svc-empty" id="cityEmpty">Pick a city to see recent community-reported outbreaks and safety recommendations.</p>
+    </aside>
     </div>
   </section>
 
@@ -181,7 +173,7 @@
     </div>
 
     <div class="tab-panel" role="tabpanel" id="panelIllness" aria-labelledby="tabIllness" data-panel="illness">
-      <p class="tab-intro">Mosquito-borne and other fever illnesses in people. Includes a symptom checker to help you pick the closest match — it is not a diagnosis.</p>
+      <p class="tab-intro">Mosquito-borne and other fever illnesses in people. Includes a symptom checker to help you pick the closest match - it is not a diagnosis.</p>
       <div class="report-grid" id="illnessGrid"></div>
     </div>
 
@@ -191,17 +183,29 @@
     </div>
 
     <div class="tab-panel" role="tabpanel" id="panelAnimal" aria-labelledby="tabAnimal" data-panel="animal" hidden>
-      <p class="tab-intro">Diseases that pass from animals, birds, ticks or mites to people — rabies, Nipah, leptospirosis and others.</p>
+      <p class="tab-intro">Diseases that pass from animals, birds, ticks or mites to people - rabies, Nipah, leptospirosis and others.</p>
       <div class="report-grid" id="animalGrid"></div>
     </div>
   </section>
 
   <!-- ================= FEED ================= -->
-  <section class="block" id="feed" style="padding-top:0;">
+  <section class="block" id="feed">
     <div class="feed-wrap">
       <div class="feed-head">
         <h3>Recent community reports</h3>
-        <span class="count" id="feedCount">—</span>
+        <div class="feed-tools">
+          <label class="sr-only" for="feedAge">Show reports from</label>
+          <select class="time-select" id="feedAge" aria-label="Show reports from">
+            <option value="map" selected>Same as map</option>
+            <option value="1">Last 24 hours</option>
+            <option value="3">Last 3 days</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="0">All time</option>
+          </select>
+          <span class="count" id="feedCount">-</span>
+        </div>
       </div>
       <div class="feed-list" id="feedList">
         <div class="empty-state"><span class="big">🗺️</span>Loading reports…</div>
@@ -209,27 +213,31 @@
     </div>
   </section>
 
-  <!-- ================= WHY VOLUNTEER ================= -->
-  <section class="block" id="volunteer" style="padding-top:0;">
-    <div class="volunteer">
-      <div class="v-intro">
-        <div class="eyebrow">Why volunteer</div>
-        <h2>One minute from you can protect a whole street</h2>
-        <p>PandeMApp only works because ordinary people tell it what they see. Official systems often hear about a problem late — your report can be the first signal for your neighbourhood.</p>
-        <a class="btn btn-primary" href="#report" id="volunteerCta">📝 Make a report</a>
+  <!-- ================= SERVICES: CITY OUTBREAKS ================= -->
+  <section class="block" id="services">
+    <div class="section-head">
+      <div class="eyebrow">Services</div>
+      <h2>Check a city before you go out</h2>
+      <p>Search for a city to see what the community has reported there recently, with general precautions for going out. Community reports only - not an official outbreak status.</p>
+    </div>
+
+    <div class="svc-card">
+      <div class="svc-search">
+        <label class="sr-only" for="cityInput">Search for a city</label>
+        <input type="search" id="cityInput" class="city-input" list="cityList"
+               placeholder="Search a city, e.g. Delhi, Pune, Kochi…" autocomplete="off" />
+        <datalist id="cityList"></datalist>
+        <button class="btn btn-primary" id="citySearchBtn">🔍 Search</button>
+        <button class="btn btn-ghost" id="cityNearMeBtn" title="Use your approximate location">📍 Near me</button>
       </div>
-      <ul class="v-list">
-        <li><span class="v-ic">⏱️</span><div><b>Earlier warnings</b><span>A cluster of reports can show a problem days before it appears in formal figures.</span></div></li>
-        <li><span class="v-ic">🎯</span><div><b>Help the right fix reach the right place</b><span>Clear maps help cleanup, fogging and vaccination teams go where they are needed first.</span></div></li>
-        <li><span class="v-ic">💧</span><div><b>Breeding sites are fixable</b><span>A puddle, a blocked drain or a pile of garbage you flag today can be cleared before it breeds mosquitoes.</span></div></li>
-        <li><span class="v-ic">🔒</span><div><b>You stay private</b><span>Pins are shifted by up to 150 m and no name or contact details are attached. No account is needed.</span></div></li>
-        <li><span class="v-ic">🤝</span><div><b>Neighbours look out for each other</b><span>Reports help the people around you decide when to take extra care — and the next person to report builds on yours.</span></div></li>
-      </ul>
+      <div class="chip-row svc-quick" id="cityQuick" aria-label="Popular cities"></div>
+      <div class="svc-result" id="cityResult" hidden></div>
+      <p class="svc-empty" id="cityEmpty">Pick a city to see recent community-reported outbreaks and safety recommendations.</p>
     </div>
   </section>
 
   <!-- ================= HOW ================= -->
-  <section class="block" id="how" style="padding-top:0;">
+  <section class="block" id="how">
     <div class="section-head">
       <div class="eyebrow">How it works</div>
       <h2>From a puddle to prevention</h2>
@@ -258,8 +266,26 @@
     </div>
   </section>
 
+  <!-- ================= WHY VOLUNTEER ================= -->
+  <section class="block" id="volunteer">
+    <div class="volunteer">
+      <div class="v-intro">
+        <div class="eyebrow">Why volunteer</div>
+        <h2>One minute from you can protect a whole street</h2>
+        <p>PandeMApp only works because ordinary people tell it what they see. Official systems often hear about a problem late - your report can be the first signal for your neighbourhood.</p>
+      </div>
+      <ul class="v-list">
+        <li><span class="v-ic">⏱️</span><div><b>Earlier warnings</b><span>A cluster of reports can show a problem days before it appears in formal figures.</span></div></li>
+        <li><span class="v-ic">🎯</span><div><b>Help the right fix reach the right place</b><span>Clear maps help cleanup, fogging and vaccination teams go where they are needed first.</span></div></li>
+        <li><span class="v-ic">💧</span><div><b>Breeding sites are fixable</b><span>A puddle, a blocked drain or a pile of garbage you flag today can be cleared before it breeds mosquitoes.</span></div></li>
+        <li><span class="v-ic">🔒</span><div><b>You stay private</b><span>Pins are shifted by up to 150 m and no name or contact details are attached. No account is needed.</span></div></li>
+        <li><span class="v-ic">🤝</span><div><b>Neighbours look out for each other</b><span>Reports help the people around you decide when to take extra care - and the next person to report builds on yours.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
   <!-- ================= PRIVACY ================= -->
-  <section class="block" id="privacy" style="padding-top:20px;">
+  <section class="block" id="privacy">
     <div class="privacy">
       <div>
         <div class="badge">🔒 Privacy</div>
@@ -287,11 +313,11 @@
   <div id="signedInBlock" style="display:none;">
     <img class="p-photo" id="panelAvatar" alt="Profile photo" hidden>
     <div class="guest-avatar" id="panelInitials" hidden>👤</div>
-    <h3 id="panelName">—</h3>
-    <div class="p-email" id="panelEmail">—</div>
+    <h3 id="panelName">-</h3>
+    <div class="p-email" id="panelEmail">-</div>
     <div class="p-meta">
-      <div><span>Member since</span><span id="panelCreated" class="mono">—</span></div>
-      <div><span>Last login</span><span id="panelLastLogin" class="mono">—</span></div>
+      <div><span>Member since</span><span id="panelCreated" class="mono">-</span></div>
+      <div><span>Last login</span><span id="panelLastLogin" class="mono">-</span></div>
       <div><span>My reports</span><span id="panelReports" class="mono">0</span></div>
     </div>
     <div class="panel-note">You're signed in, so your reports are linked to your account and can be withdrawn from any device.</div>
@@ -300,10 +326,10 @@
   <div id="guestBlock" style="display:none;">
     <div class="guest-avatar">👤</div>
     <h3>Browsing as guest</h3>
-    <div class="p-email">No account needed — reporting is open to everyone.</div>
+    <div class="p-email">No account needed - reporting is open to everyone.</div>
     <div class="p-meta">
       <div><span>My reports</span><span id="guestReports" class="mono">0</span></div>
-      <div><span>Storage</span><span id="guestStorage" class="mono">—</span></div>
+      <div><span>Storage</span><span id="guestStorage" class="mono">-</span></div>
     </div>
     <div class="panel-note">Sign in with Google only if you want your reports tied to an account and synced across devices. Nothing else changes.</div>
   </div>
@@ -331,94 +357,104 @@
       <div class="type-grid" id="modalTypeGrid"></div>
     </div>
 
-    <!-- Symptom checker: shown only when reporting a disease -->
+    <!-- Symptoms: extra details saved with a disease report -->
     <div class="field symptom-box" id="symptomBox" hidden>
-      <label>Symptom checker</label>
-      <p class="loc-hint">Tick every symptom the patient has — they are saved with your report. We also suggest the closest match to report; this is <b>not a diagnosis</b>.</p>
+      <label>Symptoms</label>
+      <p class="loc-hint">Tap the symptoms the patient has. This only adds detail to your report.</p>
       <div class="sym-grid" id="symptomGrid"></div>
       <div class="sym-danger" id="symptomDanger" hidden></div>
-      <div class="sym-result" id="symptomResult" aria-live="polite"></div>
+      <div class="sym-result" id="symptomResult" hidden></div>
       <div class="sym-extra">
         <div class="sym-q">
-          <label for="patientSexAtBirth">Sex assigned at birth (for clinical accuracy)</label>
-          <select class="time-select" id="patientSexAtBirth" name="patientSexAtBirth">
-            <option value="">Choose one </option>
+          <label for="symptomLifeStage">Age group</label>
+          <select class="time-select" id="symptomLifeStage">
+            <option value="">Choose</option>
+            <option value="0-4">Under 5</option>
+            <option value="5-17">5-17</option>
+            <option value="18-59">18-59</option>
+            <option value="60+">60+</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="patientSexAtBirth">Sex</label>
+          <select class="time-select" id="patientSexAtBirth">
+            <option value="">Choose</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
         </div>
         <div class="sym-q">
-          <label for="symptomLifeStage">Select your current life stage:</label>
-          <select class="time-select" id="symptomLifeStage">
-            <option value="">Choose one </option>
-            <option value="0-1">Infant (Under 1 year)</option>
-            <option value="2-4">Toddler (2 to 4 years)</option>
-            <option value="5-12">Child (5 to 12 years)</option>
-            <option value="13-19">Teenage (13 to 19 years)</option>
-            <option value="20-39">Adult (20 to 39 years)</option>
-            <option value="40-59">Middle Aged (40 to 59 years)</option>
-            <option value="60+">Senior Citizen (60+ years)</option>
-          </select>
-        </div>
-        <div class="sym-q">
-          <label for="symptomDuration">How long have the symptoms lasted?</label>
+          <label for="symptomDuration">Sick for</label>
           <select class="time-select" id="symptomDuration">
-            <option value="">Choose one </option>
-            <option value="today">Started today</option>
-            <option value="1-2">1–2 days</option>
-            <option value="3-5">3–5 days</option>
-            <option value="6-10">6–10 days</option>
-            <option value="10+">More than 10 days</option>
+            <option value="">Choose</option>
+            <option value="1-2">1-2 days</option>
+            <option value="3-5">3-5 days</option>
+            <option value="6-10">6-10 days</option>
+            <option value="10+">10+ days</option>
           </select>
         </div>
         <div class="sym-q">
-          <label for="symptomTraveled">Have you traveled recently?</label>
-          <select class="time-select" id="symptomTraveled">
-            <option value="">Choose one </option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </div>
-        <div class="sym-q">
-          <label for="symptomContactSick">Have you been in contact with anyone who is sick?</label>
-          <select class="time-select" id="symptomContactSick">
-            <option value="">Choose one </option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </div>
-        <div class="sym-q">
-          <label for="symptomAllergies">Do you have any medication or food allergies?</label>
-          <select class="time-select" id="symptomAllergies">
-            <option value="">Choose one </option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </div>
-        <div class="sym-q">
-          <label for="symptomConfused">Is the person confused, drowsy, or hard to wake up?</label>
-          <select class="time-select" id="symptomConfused">
-            <option value="">Choose one </option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </div>
-        <div class="sym-q">
-          <label for="symptomOther">Any other symptom? <span class="opt">(optional)</span></label>
+          <label for="symptomOther">Other symptom <span class="opt">(optional)</span></label>
           <input type="text" class="sym-input" id="symptomOther" maxlength="80" placeholder="e.g. loss of appetite" />
         </div>
       </div>
-      <p class="sym-disclaimer">General information only, not health advice. Many illnesses share these symptoms — see a doctor for a diagnosis.</p>
     </div>
 
-    <!-- Habitat checker: shown only when reporting a breeding site -->
-    <div class="field symptom-box habitat-box" id="habitatBox" hidden>
-      <label>Habitat checker</label>
-      <p class="loc-hint">Answer what you can see at the site — your answers are saved with the report.</p>
-      <div id="habitatQuestions"></div>
-      <div class="hab-result" id="habitatResult" aria-live="polite"></div>
-      <p class="sym-disclaimer">Indicative only, based on your answers — not an official inspection.</p>
+    <!-- Site details: extra information saved with a breeding-site report -->
+    <div class="field symptom-box" id="siteBox" hidden>
+      <label>About the site</label>
+      <p class="loc-hint">A few quick details help others understand the problem. All optional.</p>
+      <div class="sym-extra">
+        <div class="sym-q">
+          <label for="siteSetting">Where is it?</label>
+          <select class="time-select" id="siteSetting">
+            <option value="">Choose</option>
+            <option value="residential">Residential area</option>
+            <option value="market">Market / shops</option>
+            <option value="school">School / hospital</option>
+            <option value="construction">Construction site</option>
+            <option value="roadside">Roadside / footpath</option>
+            <option value="park">Park / open ground</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="siteSince">How long has it been there?</label>
+          <select class="time-select" id="siteSince">
+            <option value="">Choose</option>
+            <option value="new">Less than a week</option>
+            <option value="1-4w">1-4 weeks</option>
+            <option value="1m+">More than a month</option>
+            <option value="recurring">Keeps coming back</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="siteInsects">Mosquitoes or larvae seen?</label>
+          <select class="time-select" id="siteInsects">
+            <option value="">Choose</option>
+            <option value="larvae">Yes, larvae in water</option>
+            <option value="mosquitoes">Yes, many mosquitoes</option>
+            <option value="rats">Rats / flies / stray animals</option>
+            <option value="none">None seen</option>
+          </select>
+        </div>
+        <div class="sym-q">
+          <label for="siteReported">Reported to the local body?</label>
+          <select class="time-select" id="siteReported">
+            <option value="">Choose</option>
+            <option value="yes_no_action">Yes, no action yet</option>
+            <option value="yes_action">Yes, work has started</option>
+            <option value="no">No</option>
+            <option value="unsure">Not sure</option>
+          </select>
+        </div>
+        <div class="sym-q sym-q-wide">
+          <label for="siteDetails">Details <span class="opt">(optional)</span></label>
+          <textarea class="note-input" id="siteDetails" rows="3" maxlength="300" placeholder="e.g. water collected near the market"></textarea>
+        </div>
+      </div>
     </div>
+
 
     <div class="field">
       <label id="severityLabel">How severe is it?</label>
@@ -429,7 +465,7 @@
       <label>Where is it?</label>
       <div class="picker-map" id="pickerMap"></div>
       <div class="loc-row" style="margin-top:8px;">
-        <span class="loc-readout" id="locReadout">No pin dropped yet — tap the map above.</span>
+        <span class="loc-readout" id="locReadout">No pin dropped yet - tap the map above.</span>
         <button class="btn btn-ghost" id="useMyLocationBtn" style="padding:8px 12px;font-size:12.5px;">📍 Use my location</button>
       </div>
       <p class="loc-hint" style="margin-top:6px;">Tap anywhere on the mini-map to place your pin. <b>Zoom is limited to India.</b></p>
@@ -451,7 +487,7 @@
 
     <div class="privacy-line">
       <span>🔒</span>
-      <span>We save your pin shifted by up to <b>150 m</b>, so it shows the street — never your doorstep. No name or contact details are attached. Files are public — hide faces, names, ID numbers and house numbers first.</span>
+      <span>We save your pin shifted by up to <b>150 m</b>, so it shows the street - never your doorstep. No name or contact details are attached. Files are public - hide faces, names, ID numbers and house numbers first.</span>
     </div>
     <p class="sym-disclaimer">PandeMApp is not a health advice website. Reports are unverified.</p>
   </div>
@@ -478,7 +514,7 @@
       <strong>If an animal has bitten or scratched you, get medical care first.</strong>
       Rabies is almost always fatal once symptoms begin, but it is preventable: wash the
       wound with soap and running water for 15 minutes, then go to a hospital or clinic
-      for post-exposure vaccination — and immunoglobulin if the wound is deep. Go today,
+      for post-exposure vaccination - and immunoglobulin if the wound is deep. Go today,
       not tomorrow. Filing this report does not replace that.
     </div>
 
@@ -487,40 +523,38 @@
       <div class="type-grid" id="animalTypeGrid"></div>
     </div>
 
-    <!-- Symptom checker for animal-borne diseases -->
+    <!-- Symptoms: extra details saved with an animal-borne disease report -->
     <div class="field symptom-box" id="animalSymptomBox">
-      <label>Symptom checker</label>
-      <p class="loc-hint">Tick every symptom the patient has — they are saved with your report. We also suggest the closest match to report; this is <b>not a diagnosis</b>.</p>
+      <label>Symptoms</label>
+      <p class="loc-hint">Tap the symptoms the patient has. This only adds detail to your report.</p>
       <div class="sym-grid" id="animalSymptomGrid"></div>
       <div class="sym-danger" id="animalSymptomDanger" hidden></div>
-      <div class="sym-result" id="animalSymptomResult" aria-live="polite"></div>
+      <div class="sym-result" id="animalSymptomResult" hidden></div>
       <div class="sym-extra">
         <div class="sym-q">
-          <label for="animalSymptomDuration">How long have the symptoms lasted?</label>
+          <label for="animalSymptomDuration">Sick for</label>
           <select class="time-select" id="animalSymptomDuration">
-            <option value="">Choose one…</option>
-            <option value="today">Started today</option>
-            <option value="1-2">1–2 days</option>
-            <option value="3-5">3–5 days</option>
-            <option value="6-10">6–10 days</option>
-            <option value="10+">More than 10 days</option>
+            <option value="">Choose</option>
+            <option value="1-2">1-2 days</option>
+            <option value="3-5">3-5 days</option>
+            <option value="6-10">6-10 days</option>
+            <option value="10+">10+ days</option>
           </select>
         </div>
         <div class="sym-q">
-          <label for="animalSymptomPeople">How many people have these symptoms?</label>
+          <label for="animalSymptomPeople">People affected</label>
           <select class="time-select" id="animalSymptomPeople">
-            <option value="">Choose one…</option>
-            <option value="1">Just one person</option>
-            <option value="2-5">2–5 people</option>
-            <option value="6+">More than 5 people</option>
+            <option value="">Choose</option>
+            <option value="1">Just one</option>
+            <option value="2-5">2-5</option>
+            <option value="6+">More than 5</option>
           </select>
         </div>
-        <div class="sym-q">
-          <label for="animalSymptomOther">Any other symptom? <span class="opt">(optional)</span></label>
+        <div class="sym-q sym-q-wide">
+          <label for="animalSymptomOther">Other symptom <span class="opt">(optional)</span></label>
           <input type="text" class="sym-input" id="animalSymptomOther" maxlength="80" placeholder="e.g. loss of appetite" />
         </div>
       </div>
-      <p class="sym-disclaimer">General information only, not health advice. Many illnesses share these symptoms — see a doctor for a diagnosis.</p>
     </div>
 
     <div class="field">
@@ -539,7 +573,7 @@
       <label>Where is it?</label>
       <div class="picker-map" id="animalPickerMap"></div>
       <div class="loc-row" style="margin-top:8px;">
-        <span class="loc-readout" id="animalLocReadout">No pin dropped yet — tap the map above.</span>
+        <span class="loc-readout" id="animalLocReadout">No pin dropped yet - tap the map above.</span>
         <button class="btn btn-ghost" id="animalLocateBtn" style="padding:8px 12px;font-size:12.5px;">📍 Use my location</button>
       </div>
       <p class="loc-hint" style="margin-top:6px;">Tap anywhere on the mini-map to place your pin. <b>Zoom is limited to India.</b></p>
@@ -561,7 +595,7 @@
 
     <div class="privacy-line">
       <span>🔒</span>
-      <span>We save your pin shifted by up to <b>150 m</b>, so it shows the street — never your doorstep. No name or contact details are attached. Files are public — hide faces, names, ID numbers and house numbers first.</span>
+      <span>We save your pin shifted by up to <b>150 m</b>, so it shows the street - never your doorstep. No name or contact details are attached. Files are public - hide faces, names, ID numbers and house numbers first.</span>
     </div>
     <p class="sym-disclaimer">PandeMApp is not a health advice website. Reports are unverified.</p>
   </div>
@@ -587,7 +621,7 @@
 <!-- MapLibre GL JS is imported as an ES module inside dashboard.js (v6 ships ESM only) -->
 <script src="firebase-config.js"></script>
 <script src="store.js"></script>
-<script type="module" src="dashboard.js?v=20261105a"></script>
+<script type="module" src="dashboard.js?v=20261106i"></script>
 
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a422e7593f2ea716',t:'MTc5MDYwMDEzOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>

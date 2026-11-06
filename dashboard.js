@@ -2,7 +2,7 @@
 import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.mjs";
 
 /* ============================================================
-   PandeMApp — dashboard logic
+   PandeMApp - dashboard logic
    • MapLibre GL map locked to India
    • Real community reports (Firestore, with local fallback)
    • Optional Google sign-in
@@ -14,14 +14,14 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   const Store = window.HealthMapStore;
   const Images = window.HealthMapImages;
   /* Tile chain + disease lists live in store.js (window.HealthMapConfig) because
-     both pages load it — one shared copy instead of an extra module each. */
+     both pages load it - one shared copy instead of an extra module each. */
   const { TILE_PROVIDERS, styleFor, TILE_STORE_KEY, errorStatus, isDecisive,
           ZOONOTIC_TYPES, ZOONOTIC_EXPOSURE } = window.HealthMapConfig;
   const auth = fb.auth;
   const db = fb.db;
 
   /* ---------------- report catalogue ----------------
-     `category` is what the database stores and must stay "disease" or "risk" —
+     `category` is what the database stores and must stay "disease" or "risk" -
      the published rules reject anything else.
      `group` is what the UI sorts by: illness, risk, or animal-spread. */
   const ANIMAL_COLOR = "#F5A623";   // the whole animal group shares one colour
@@ -41,7 +41,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
 
   /* Animal-spread diseases. Names and descriptions come from the shared config in
      store.js; only the emoji and the colour live here. They share one colour so the
-     map stays readable — the emoji on each pin tells them apart. */
+     map stays readable - the emoji on each pin tells them apart. */
   const ANIMAL_ICONS = {
     rabies: "🐕", nipah: "🦇", leptospirosis: "💧", anthrax: "🐄",
     brucellosis: "🐐", plague: "🐀", kyasanur: "🕷️", cchf: "🩸",
@@ -96,14 +96,14 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   let userLatLng = null;          // jittered display location
   let userMarker = null;
   let allReports = [];
-  // "other_risk" is the bucket for legacy/unrecognised reports — it has no card
+  // "other_risk" is the bucket for legacy/unrecognised reports - it has no card
   // or chip of its own, but must stay visible so old data never disappears.
   let visibleTypes = new Set(Object.keys(TYPES).concat(["other_risk"]));
-  let timeWindow = 10;            // days — default is the last 10 days; "custom" uses customFrom/customTo
+  let timeWindow = 10;            // days - default is the last 10 days; "custom" uses customFrom/customTo
   let customFrom = 0;             // ms timestamps for the custom date range (0 = open-ended)
   let customTo = 0;
   let radiusKm = 0;               // 0 = anywhere in India
-  let radiusCentre = null;        // { lat, lng, label } — fixed when the radius is chosen
+  let radiusCentre = null;        // { lat, lng, label } - fixed when the radius is chosen
   let searchedCity = null;        // last city found by the city search
   let ringData = { type: "FeatureCollection", features: [] };   // radius outline, re-applied after a style swap
   let ringDirty = false;
@@ -122,7 +122,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   const INDIA_CENTER = [78.9629, 20.5937];        // [lng, lat]
   const EMPTY_FC = { type: "FeatureCollection", features: [] };
 
-  /* The tile chain itself lives in basemap.js — it is shared with the
+  /* The tile chain itself lives in basemap.js - it is shared with the
      animal-spread disease form, so there is only one list to maintain. */
 
   /* Bump this whenever TILE_PROVIDERS changes. It is printed on load so you can
@@ -132,7 +132,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
 
 
   /* OpenFreeMap's and CARTO's vector styles carry no attribution of their own,
-     which leaves OpenStreetMap's contributors uncredited — and ODbL requires
+     which leaves OpenStreetMap's contributors uncredited - and ODbL requires
      credit. Rather than fight MapLibre's AttributionControl (it keeps a shared
      list, so swapping controls only appends), the map shows its own credit line,
      rewritten whenever the provider changes. Handy side effect: the corner of the
@@ -151,7 +151,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     console.info("%c[PandeMApp] build " + BUILD_ID + "%c  basemap chain: " + chain,
       "font-weight:bold", "font-weight:normal");
     if (TILE_PROVIDERS.some((p) => p.id === "carto")) {
-      console.warn("[PandeMApp] CARTO is only included when CARTO_KEY is set — if you see this with an empty key, you are running an old cached dashboard.js.");
+      console.warn("[PandeMApp] CARTO is only included when CARTO_KEY is set - if you see this with an empty key, you are running an old cached dashboard.js.");
     }
   }
 
@@ -166,7 +166,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       if (!saved) return 0;
       const i = TILE_PROVIDERS.findIndex((p) => p.id === saved);
       if (i >= 0) return i;
-      // remembered a provider that has since been removed (e.g. carto) — forget it
+      // remembered a provider that has since been removed (e.g. carto) - forget it
       localStorage.removeItem(TILE_STORE_KEY);
     } catch (e) { /* private mode */ }
     return 0;
@@ -212,7 +212,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
        • The result is a compact data URL that fits inside a Firestore document
          (1 MB limit), so no Storage bucket, rules change or billing is needed. */
   /* The compressor lives in store.js (window.HealthMapImages) because the
-     animal-spread form uses the identical pipeline — a photo behaves the same
+     animal-spread form uses the identical pipeline - a photo behaves the same
      whichever form it was attached from. */
   const compressImage = (file) => Images.compress(file);
 
@@ -236,8 +236,8 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   }
 
   /* Google serves profile photos from lh3.googleusercontent.com. When that
-     request fails — a host content-security policy, a strict network, a photo
-     the account no longer exposes — the <img> renders as an empty box and the
+     request fails - a host content-security policy, a strict network, a photo
+     the account no longer exposes - the <img> renders as an empty box and the
      profile picture quietly "disappears". So build the image in script, listen
      for the failure, and fall back to the person's initials: the button and the
      panel then always show something that is clearly theirs. */
@@ -297,10 +297,10 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   }
 
   function photoHintFor(group) {
-    if (group === "animal") return "A photo of the animal, the bite or wound, or a PDF of the doctor's note helps — hide faces, names and house numbers first. Images or PDFs up to about 500 KB.";
+    if (group === "animal") return "A photo of the animal, the bite or wound, or a PDF of the doctor's note helps - hide faces, names and house numbers first. Images or PDFs up to about 500 KB.";
     return group === "illness"
-      ? "A photo or PDF of the doctor's note or test report helps confirm it — hide names, IDs and other personal details first. Images or PDFs up to about 500 KB."
-      : "A photo of the place — a drain, puddle, tank or dump site — helps others confirm it and act on it.";
+      ? "A photo or PDF of the doctor's note or test report helps confirm it - hide names, IDs and other personal details first. Images or PDFs up to about 500 KB."
+      : "A photo of the place - a drain, puddle, tank or dump site - helps others confirm it and act on it.";
   }
 
   /* ---- attachments: one image (compressed) or one small PDF per report ---- */
@@ -328,10 +328,10 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     }
     if (isPdf(file)) {
       if (file.size > MAX_PDF_BYTES) {
-        throw new Error("That PDF is " + Math.round(file.size / 1024) + " KB — please keep PDFs under 500 KB, or attach an image of the key page.");
+        throw new Error("That PDF is " + Math.round(file.size / 1024) + " KB - please keep PDFs under 500 KB, or attach an image of the key page.");
       }
       const raw = await readAsDataUrl(file);
-      // some browsers label PDFs application/octet-stream — normalise so it can be validated later
+      // some browsers label PDFs application/octet-stream - normalise so it can be validated later
       const dataUrl = String(raw).replace(/^data:[^;,]*;base64,/, "data:application/pdf;base64,");
       return { kind: "pdf", dataUrl: dataUrl, name: file.name || "document.pdf" };
     }
@@ -434,7 +434,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     return currentUser ? currentUser.uid : Store.guestId();
   }
 
-  /* Deleting a cloud report requires a signed-in author — see firestore.rules.
+  /* Deleting a cloud report requires a signed-in author - see firestore.rules.
      A guest can't prove ownership to the server, so their only working path is
      a report held locally. Never offer a button that is guaranteed to fail. */
   function canWithdraw(r) {
@@ -453,9 +453,9 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   function pinElement(typeKey) {
     const t = typeInfo(typeKey);
     const el = document.createElement("div");
-    el.className = "report-pin" + (t.group === "illness" ? " disease" : "");
-    el.style.background = t.color;
-    el.innerHTML = "<span>" + t.icon + "</span>";
+    el.className = "report-dot";
+    el.title = t.label;
+    el.innerHTML = '<i style="background:' + t.color + '"></i>';
     return el;
   }
 
@@ -473,7 +473,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   let circleDirty = false;
   const providerLog = [];
 
-  /* maxBounds only constrains the map CENTRE — at low zoom the viewport is wider
+  /* maxBounds only constrains the map CENTRE - at low zoom the viewport is wider
      than India, so neighbouring countries would still show. This returns the
      lowest zoom at which the viewport fits entirely inside India's box.
      MapLibre's world is tileSize(512) × 2^zoom pixels. */
@@ -501,7 +501,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   function initMap() {
     announceBuild();
     if (typeof maplibregl === "undefined") {
-      $("mapLoading").innerHTML = "<p>MAP LIBRARY FAILED TO LOAD — CHECK YOUR CONNECTION</p>";
+      $("mapLoading").innerHTML = "<p>MAP LIBRARY FAILED TO LOAD - CHECK YOUR CONNECTION</p>";
       return;
     }
 
@@ -524,10 +524,10 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     setCredit(TILE_PROVIDERS[providerIndex]);
 
     // "load" fires for the first style only, "idle" once the map has actually
-    // drawn tiles — after a failover there is no second "load", so both paths
+    // drawn tiles - after a failover there is no second "load", so both paths
     // end in mapReady().
     /* "Ready" means tiles actually painted, not merely "the style parsed".
-       An inline style fires load instantly even when every tile is refused —
+       An inline style fires load instantly even when every tile is refused -
        that's how a blocked host ends up looking like a blank white map.
        (MapLibre v6 has no dataType:"tile" event, so ask the map directly.) */
     map.on("load", armPaintCheck);
@@ -567,7 +567,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
      after a failover. */
   /* Positive proof a tile really arrived: a 200 from this provider's own host.
      (transferSize/decodedBodySize are 0 cross-origin without Timing-Allow-Origin,
-     but responseStatus is exposed — 200 when a tile loads, 0 when it's refused.) */
+     but responseStatus is exposed - 200 when a tile loads, 0 when it's refused.) */
   function tilesArrived() {
     try {
       const host = TILE_PROVIDERS[providerIndex].host;
@@ -627,7 +627,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     if (providerIndex > 0) {
       const forced = new URLSearchParams(location.search).get("tiles");
       if (!forced) {
-        toast("Default map tiles are blocked here — using " + TILE_PROVIDERS[providerIndex].label + " instead.", "info");
+        toast("Default map tiles are blocked here - using " + TILE_PROVIDERS[providerIndex].label + " instead.", "info");
       }
     }
     locateUser();
@@ -689,7 +689,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       el.innerHTML =
         '<div class="map-fallback">' +
         "<h3>Map tiles are blocked on this network</h3>" +
-        "<p>Every map provider we tried was refused. Reporting still works — " +
+        "<p>Every map provider we tried was refused. Reporting still works - " +
         "open a report and pick your location on the picker map.</p>" +
         '<button class="btn ghost" id="retryTilesBtn">Try the map again</button>' +
         "</div>";
@@ -789,7 +789,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
         if (t.group === "illness" || t.group === "animal") features.push(circleFeature(r, 150, t.color));
 
         const popup = new maplibregl.Popup({ maxWidth: "260px", offset: 16 }).setHTML(popupHtml(r));
-        const marker = new maplibregl.Marker({ element: pinElement(r.type), anchor: "bottom" })
+        const marker = new maplibregl.Marker({ element: pinElement(r.type), anchor: "center" })
           .setLngLat([r.lng, r.lat])
           .setPopup(popup)
           .addTo(map);
@@ -802,7 +802,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     ensureDiseaseLayers();
   }
 
-  /* MapLibre has no metre-based circle layer, so build a 150 m polygon — the
+  /* MapLibre has no metre-based circle layer, so build a 150 m polygon - the
      illness blur then stays accurate at every zoom level. */
   function circleFeature(r, radius, color) {
     const steps = 40;
@@ -868,7 +868,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
      doesn't work either: the India lock holds the map at a zoom where the frame
      cannot show the whole country, so panning north would drop Delhi from the
      count. The pins are drawn for every loaded report, so the bar counts the
-     same set the pins do — they can never disagree again. */
+     same set the pins do - they can never disagree again. */
   function countedReports() {
     return allReports.filter(passesFilters);
   }
@@ -898,10 +898,19 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   }
 
   /* ================= feed ================= */
+  /* The feed can use its own age filter ("map" = follow the map's date filter). */
+  let feedAge = "map";
+  function feedPasses(r) {
+    if (feedAge === "map") return passesFilters(r);
+    const days = Number(feedAge);
+    if (days && Date.now() - r.createdAt.getTime() > days * 86400000) return false;
+    return withinRadius(r);
+  }
+
   function renderFeed() {
     const list = $("feedList");
     const ref = userLatLng || (map && map.getCenter());
-    const items = allReports.filter((r) => visibleTypes.has(r.type) && passesFilters(r)).slice(0, 60);
+    const items = allReports.filter((r) => visibleTypes.has(r.type) && feedPasses(r)).slice(0, 60);
 
     $("feedCount").textContent = allReports.length
       ? items.length + " of " + allReports.length + " reports"
@@ -921,7 +930,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       .map((r) => {
         const t = typeInfo(r.type);
         const sev = (SEVERITY[t.category] || [])[Math.max(0, Math.min(2, r.severity - 1))] || "";
-        const dist = ref ? fmtDistance(haversine(ref.lat, ref.lng, r.lat, r.lng)) : "—";
+        const dist = ref ? fmtDistance(haversine(ref.lat, ref.lng, r.lat, r.lng)) : "-";
         const mine = r.userId === currentUserId();
         return (
           '<div class="feed-item" data-focus="' + r.id + '">' +
@@ -978,7 +987,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       '<button class="chip on" data-group="' + keys.join(",") + '">' + icon + " " + label + "</button>";
 
     /* Three groups only. With twelve animal diseases on the map, a chip per type
-       would mean twenty-one chips — the legend carries the per-type detail instead. */
+       would mean twenty-one chips - the legend carries the per-type detail instead. */
     host.innerHTML = ["illness", "risk", "animal"]
       .map((g) => group(GROUPS[g].chip, GROUPS[g].icon, typeKeys(g)))
       .join("");
@@ -1000,58 +1009,25 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     });
   }
 
-  /* Three rows instead of eighteen entries. Each row shows the group's colours and
-     a live count, and opens to list the individual types. */
-  function buildLegend() {
-    const host = $("legendItems");
-    host.innerHTML = ["illness", "risk", "animal"]
-      .map((g) => {
-        const keys = typeKeys(g);
-        const dots = keys
-          .slice(0, 4)
-          .map((k) => '<i class="lg-dot" style="background:' + TYPES[k].color + '"></i>')
-          .join("");
-        const items = keys
-          .map((k) => {
-            const t = TYPES[k];
-            // a miniature of the actual pin: coloured marker with its emoji inside
-            return (
-              '<span class="lg-item"><span class="lg-pin" style="background:' + t.color + '">' +
-                "<i>" + t.icon + "</i></span>" + t.label + "</span>"
-            );
-          })
-          .join("");
-        return (
-          '<div class="lg-group">' +
-            '<button class="lg-head" data-lg-toggle="' + g + '">' +
-              '<span class="lg-caret">▸</span>' +
-              GROUPS[g].icon + " " + GROUPS[g].label +
-              '<span class="lg-dots">' + dots + "</span>" +
-              '<b class="lg-count" data-count="' + g + '">0</b>' +
-            "</button>" +
-            '<div class="lg-types" data-lg-body="' + g + '" hidden>' + items + "</div>" +
-          "</div>"
-        );
-      })
-      .join("");
+  /* Clean legend: three short groups, each a two-column list of colour dots.
+     Every animal-borne disease shares one colour, so that group is one line. */
+  function buildLegend() { updateLegendCounts(); }
 
-    host.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-lg-toggle]");
-      if (!btn) return;
-      const body = host.querySelector('[data-lg-body="' + btn.dataset.lgToggle + '"]');
-      if (!body) return;
-      const willOpen = body.hidden;
-      body.hidden = !willOpen;
-      btn.classList.toggle("open", willOpen);
-    });
-  }
-
-  /* Live counts next to each legend group, so the legend doubles as a tally. */
   function updateLegendCounts() {
-    ["illness", "risk", "animal"].forEach((g) => {
-      const el = document.querySelector('[data-count="' + g + '"]');
-      if (el) el.textContent = allReports.filter((r) => typeInfo(r.type).group === g).length;
-    });
+    const host = $("legendItems");
+    if (!host) return;
+    const dot = (color, label) =>
+      '<span class="lg-item"><i class="lg-dot" style="background:' + color + '"></i>' + escapeHtml(label) + "</span>";
+    host.innerHTML = ["illness", "risk", "animal"].map((g) => {
+      const total = allReports.filter((r) => typeInfo(r.type).group === g).length;
+      const items = g === "animal"
+        ? dot(ANIMAL_COLOR, "All animal-borne")
+        : typeKeys(g).map((k) => dot(TYPES[k].color, TYPES[k].label.replace("Japanese encephalitis", "Japanese enceph."))).join("");
+      return '<div class="lg-group">' +
+          '<div class="lg-head"><span>' + GROUPS[g].label + '</span><b class="lg-count">' + total + "</b></div>" +
+          '<div class="lg-types">' + items + "</div>" +
+        "</div>";
+    }).join("");
   }
 
   /* ================= report cards + modal ================= */
@@ -1064,9 +1040,13 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
      Chikungunya, Japanese encephalitis and Zika are offered in the form even
      though they are not cards on the page. */
   const DASHBOARD_ILLNESS = typeKeys("illness");
-  const DASHBOARD_ANIMAL  = typeKeys("animal");
+  // Animal tab mirrors the Diseases tab: five common diseases plus an "Other" card.
+  // "Other" opens the animal form, where all twelve diseases can still be chosen.
+  const DASHBOARD_ANIMAL  = ["rabies", "nipah", "leptospirosis", "scrub_typhus", "swine_flu", "other_zoonotic"];
 
-  const OTHER_CARDS = {};   // the three tabs list every type, so there are no "Other" doors any more
+  const OTHER_CARDS = {
+    other_zoonotic: "Bird flu, anthrax, plague, tick fevers and any other illness caught from animals"
+  };
 
   function buildReportCards() {
     const illnessGrid = $("illnessGrid");
@@ -1132,9 +1112,8 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     $("modalTitle").textContent = "Report: " + t.label;
     $("modalSub").textContent = t.blurb;
     $("photoHint").textContent = photoHintFor(t.group);
-    $("symptomBox").hidden = t.group !== "illness";   // symptom checker: diseases only
-    $("habitatBox").hidden = t.group !== "risk";       // habitat checker: breeding sites only
-    if (t.group === "risk" && habitatChecker) habitatChecker.setType(key);
+    $("symptomBox").hidden = t.group !== "illness";   // symptoms: diseases only
+    $("siteBox").hidden = t.group !== "risk";          // site details: breeding sites only
     buildSeverity(t.category);
   }
 
@@ -1184,6 +1163,27 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     $("locReadout").textContent = lat.toFixed(4) + ", " + lng.toFixed(4) + " ✓ pin placed";
   }
 
+  /* Breeding-site details: simple optional questions plus a free-text box. */
+  const SITE_FIELDS = [
+    { id: "siteSetting",  key: "siteSetting",  label: "Where" },
+    { id: "siteSince",    key: "siteSince",    label: "There for" },
+    { id: "siteInsects",  key: "siteInsects",  label: "Seen" },
+    { id: "siteReported", key: "siteReported", label: "Reported to local body" }
+  ];
+  function collectSite() {
+    const parts = [];
+    const extra = {};
+    SITE_FIELDS.forEach((f) => {
+      const el = $(f.id);
+      if (!el || !el.value) return;
+      extra[f.key] = el.value;
+      parts.push(f.label + ": " + el.options[el.selectedIndex].text);
+    });
+    const details = ($("siteDetails").value || "").trim().slice(0, 300);
+    if (details) { extra.siteDetails = details; parts.push(details); }
+    return { note: parts.join(" · "), extra };
+  }
+
   function openReportModal(typeKey) {
     ensurePickerMap();
     $("overlay").classList.add("show");
@@ -1191,7 +1191,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     setPendingPhoto(null);            // never carry a file into the next report
     fillModalTypes(typeInfo(typeKey || "stagnant_water").group);
     if (illnessChecker) illnessChecker.reset();
-    if (habitatChecker) habitatChecker.reset();
+    SITE_FIELDS.forEach((f) => { const el = $(f.id); if (el) el.value = ""; });
     selectType(typeKey || "stagnant_water");
 
     setTimeout(() => {
@@ -1217,15 +1217,19 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     if (!pendingCoords) { toast("Tap the mini-map to place your pin.", "error"); return; }
     
     const t = typeInfo(selectedType);
+    // Blur the pin by up to 150 m before it is saved (was missing: "j" was undefined,
+    // so every disease / breeding-site submission crashed before reaching the database).
+    const j = jitter(pendingCoords.lat, pendingCoords.lng, 150);
     const btn = $("submitReportBtn");
     btn.disabled = true;
     btn.textContent = "Submitting...";
 
-    const checker = t.group === "illness" ? illnessChecker : habitatChecker;
-    const captured = checker ? checker.collect() : { note: "", extra: {} };
+    const captured = t.group === "illness" && illnessChecker ? illnessChecker.collect()
+      : t.group === "risk" ? collectSite()
+      : { note: "", extra: {} };
 
     if (t.group === "illness" && (!captured.extra.symptoms || captured.extra.symptoms.length === 0)) {
-      toast("Please select at least one symptom from the symptom checker.", "error");
+      toast("Please tap at least one symptom.", "error");
       btn.disabled = false;
       btn.textContent = "Submit report";
       return;
@@ -1250,8 +1254,8 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
 
     if (res.savedTo === "firestore") {
       toast(res.photoDropped
-        ? "✅ Report added — the database rejected the file, so it saved without one."
-        : "✅ Report added — it's live on the map.", "success");
+        ? "✅ Report added - the database rejected the file, so it saved without one."
+        : "✅ Report added - it's live on the map.", "success");
     } else {
       toast("⚠️ Saved on this device (cloud write blocked). See README to enable Firestore.", "error");
     }
@@ -1261,7 +1265,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
   }
 
   /* ================= animal-spread report modal =================
-     A second, purpose-built form on the same page — same map, same
+     A second, purpose-built form on the same page - same map, same
      storage, but its own diseases, its own exposure question and its
      own safety notice. Nothing opens in a new tab any more. */
   let aSelectedType = "";
@@ -1358,7 +1362,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     aSeverity = 1;
     aCoords = null;
     if (aPickerMarker) { aPickerMarker.remove(); aPickerMarker = null; }
-    $("animalLocReadout").textContent = "No pin dropped yet — tap the map above.";
+    $("animalLocReadout").textContent = "No pin dropped yet - tap the map above.";
     if (animalChecker) animalChecker.reset();
     selectAnimalType(typeInfo(typeKey).group === "animal" ? typeKey : "rabies");
 
@@ -1395,7 +1399,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
 
     // ADD THIS VALIDATION BLOCK:
     if (!animalCaptured.extra.symptoms || animalCaptured.extra.symptoms.length === 0) {
-      toast("Please select at least one symptom from the symptom checker.", "error");
+      toast("Please tap at least one symptom.", "error");
       aSaving = false;
       btn.disabled = false;
       btn.textContent = "Submit report";
@@ -1404,7 +1408,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
 
     const res = await Store.addReport({
       type: aSelectedType,
-      category: t.category,          // stays "disease" — the rules reject anything else
+      category: t.category,          // stays "disease" - the rules reject anything else
       label: t.label,
       lat: j.lat,
       lng: j.lng,
@@ -1427,8 +1431,8 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
 
     if (res.savedTo === "firestore") {
       toast(res.photoDropped
-        ? "✅ Report added — the database rejected the file, so it saved without one."
-        : "✅ Report added — it's live on the map.", "success");
+        ? "✅ Report added - the database rejected the file, so it saved without one."
+        : "✅ Report added - it's live on the map.", "success");
     } else {
       toast("⚠️ Saved on this device (cloud write blocked). See README to enable Firestore.", "error");
     }
@@ -1450,7 +1454,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       try {
         const f = await prepareFile(file);
         setter(f);
-        toast("File ready — " + fileKb(f) + " KB.", "success");
+        toast("File ready - " + fileKb(f) + " KB.", "success");
       } catch (err) {
         toast(err && err.message ? err.message : "Could not read that file.", "error");
         paintFile(ui, getter());          // keep whatever was attached before
@@ -1558,7 +1562,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     if (radiusKm) {
       radiusCentre = radiusCentreFromUI();
       if (!radiusCentre) {
-        if (!silent) toast("Your location isn't available — measuring from the centre of the map instead.", "info");
+        if (!silent) toast("Your location isn't available - measuring from the centre of the map instead.", "info");
         $("radiusCenter").value = "map";
         radiusCentre = radiusCentreFromUI();
       }
@@ -1651,11 +1655,11 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     scrub_typhus:  ["fever", "black_sore", "headache", "rash", "muscle_pain", "tick_bite", "cough"]
   };
 
-  const ILLNESS_SYMPTOM_LIST = ["fever", "chills", "sweats", "headache", "eye_pain", "joint_pain", "muscle_pain", "rash",
-    "red_eyes", "nausea", "fatigue", "confusion", "seizures", "stiff_neck", "bleeding", "abdo_pain"];
-  const ANIMAL_SYMPTOM_LIST = ["fever", "chills", "sweats", "headache", "muscle_pain", "joint_pain", "rash", "red_eyes",
-    "nausea", "fatigue", "cough", "sore_throat", "breathless", "confusion", "seizures", "bleeding", "abdo_pain",
-    "jaundice", "swollen_nodes", "black_sore", "bite", "tick_bite", "swallowing", "tingling", "anxiety"];
+  // Short lists: the most common symptoms only. Anything else goes in "Other symptom".
+  const ILLNESS_SYMPTOM_LIST = ["fever", "chills", "headache", "joint_pain", "muscle_pain", "rash",
+    "eye_pain", "nausea", "fatigue", "bleeding", "confusion", "abdo_pain"];
+  const ANIMAL_SYMPTOM_LIST = ["fever", "headache", "muscle_pain", "cough", "breathless", "jaundice",
+    "rash", "confusion", "bleeding", "bite", "tick_bite", "swallowing"];
 
   let illnessChecker = null;
   let animalChecker = null;
@@ -1671,7 +1675,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       return el && el.value ? el.options[el.selectedIndex].text : "";
     }
     function resetExtras() {
-      ["duration", "people", "other"].forEach((k) => { const el = $(ex[k]); if (el) el.value = ""; });
+      Object.keys(ex).forEach((k) => { const el = $(ex[k]); if (el) el.value = ""; });
     }
 
     function render() {
@@ -1695,6 +1699,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       }
       danger.innerHTML = msgs.map((m) => "<div>" + m + "</div>").join("");
       danger.hidden = !msgs.length;
+      if (!cfg.suggest) { result.innerHTML = ""; return; }   // data collection only - no "closest match" list
 
       if (!sel.length) {
         result.innerHTML = '<div class="sym-empty">Tick the symptoms the patient has to see which report type is the closest match.</div>';
@@ -1720,7 +1725,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       }
 
       result.innerHTML =
-        '<div class="sym-empty">Closest matches to report — not a diagnosis:</div>' +
+        '<div class="sym-empty">Closest matches to report - not a diagnosis:</div>' +
         scored.map((x) => {
           const t = TYPES[x.k];
           return (
@@ -1746,7 +1751,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       const b = e.target.closest("[data-sym-pick]");
       if (!b) return;
       cfg.onPick(b.dataset.symPick);
-      toast("Selected " + TYPES[b.dataset.symPick].label + " — change it above if it isn't right.", "info");
+      toast("Selected " + TYPES[b.dataset.symPick].label + " - change it above if it isn't right.", "info");
     });
 
     return {
@@ -1757,6 +1762,8 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       collect: function () {
         const keys = cfg.symptoms.filter((k) => selected.has(k));
         const duration = $(ex.duration) ? $(ex.duration).value : "";
+        const sexAtBirth = $(ex.sexAtBirth) ? $(ex.sexAtBirth).value : "";
+        const people = $(ex.people) ? $(ex.people).value : "";
         const lifeStage = $(ex.lifeStage) ? $(ex.lifeStage).value : "";
         const traveled = $(ex.traveled) ? $(ex.traveled).value : "";
         const contactSick = $(ex.contactSick) ? $(ex.contactSick).value : "";
@@ -1767,6 +1774,8 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
         const parts = [];
         if (keys.length) parts.push("Symptoms: " + keys.map((k) => SYMPTOMS[k]).join(", "));
         if (duration) parts.push("Lasting: " + optText(ex.duration));
+        if (sexAtBirth) parts.push("Sex at birth: " + optText(ex.sexAtBirth));
+        if (people) parts.push("People affected: " + optText(ex.people));
         if (lifeStage) parts.push("Life Stage: " + optText(ex.lifeStage));
         if (traveled) parts.push("Recent Travel: " + optText(ex.traveled));
         if (contactSick) parts.push("Contact with Sick: " + optText(ex.contactSick));
@@ -1777,6 +1786,8 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
         const extra = {};
         if (keys.length) extra.symptoms = keys;
         if (duration) extra.symptomDuration = duration;
+        if (sexAtBirth) extra.patientSexAtBirth = sexAtBirth;
+        if (people) extra.symptomPeople = people;
         if (lifeStage) extra.symptomLifeStage = lifeStage;
         if (traveled) extra.symptomTraveled = traveled;
         if (contactSick) extra.symptomContactSick = contactSick;
@@ -1805,7 +1816,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     { key: "size", label: "How big is the site?", options: [
       ["small", "Small (bucket, tyre, pot)"], ["medium", "Medium (puddle, tank, drain stretch)"], ["large", "Large (pond, plot, long stretch)"]] },
     { key: "age", label: "How long has it been like this?", options: [
-      ["lt3", "Under 3 days"], ["3to7", "3–7 days"], ["gt7", "Over a week"], ["unknown", "Don't know"]] },
+      ["lt3", "Under 3 days"], ["3to7", "3-7 days"], ["gt7", "Over a week"], ["unknown", "Don't know"]] },
     { key: "signs", label: "Signs of mosquito breeding", multi: true, options: [
       ["larvae", "Wriggling larvae in the water"], ["adults", "Many mosquitoes around"],
       ["bites", "People bitten nearby"], ["none", "None seen"]] }
@@ -1940,7 +1951,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
         });
         const has = Object.keys(habitat).length > 0;
         return {
-          note: has ? ("Habitat — " + parts.join("; ")).slice(0, 400) : "",
+          note: has ? ("Habitat - " + parts.join("; ")).slice(0, 400) : "",
           extra: has ? { habitat: habitat, habitatRisk: risk() } : {}
         };
       }
@@ -1954,20 +1965,27 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       // UPDATE THIS LINE to include your new fields:
       extras: { 
         duration: "symptomDuration", 
-        lifeStage: "symptomLifeStage", 
-        traveled: "symptomTraveled",
-        contactSick: "symptomContactSick",
-        allergies: "symptomAllergies",
-        confused: "symptomConfused",
+        sexAtBirth: "patientSexAtBirth",
+        lifeStage: "symptomLifeStage",
         other: "symptomOther" 
       },
       candidates: () => typeKeys("illness"),
       onPick: (k) => selectType(k)
     });
-    habitatChecker = makeHabitatChecker();
+    // Symptom checker inside the animal-borne disease form
+    animalChecker = makeSymptomChecker({
+      grid: "animalSymptomGrid", danger: "animalSymptomDanger", result: "animalSymptomResult",
+      symptoms: ANIMAL_SYMPTOM_LIST,
+      extras: {
+        duration: "animalSymptomDuration",
+        people: "animalSymptomPeople",
+        other: "animalSymptomOther"
+      },
+      candidates: () => typeKeys("animal"),
+      onPick: (k) => selectAnimalType(k)
+    });
     illnessChecker.reset();
     animalChecker.reset();
-    habitatChecker.reset();
   }
 
   /* ================= services: city outbreak check =================
@@ -2005,7 +2023,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     "trichy": "Tiruchirappalli", "mangalore": "Mangaluru"
   };
 
-  const QUICK_CITIES = ["Delhi", "Mumbai", "Kolkata", "Chennai", "Bengaluru", "Hyderabad", "Pune", "Ahmedabad", "Kochi", "Lucknow", "Ghaziabad", "Guwahati"];
+  const QUICK_CITIES = ["Delhi", "Mumbai", "Kolkata", "Chennai", "Bengaluru", "Hyderabad"];
 
   let svcCity = null;
   let svcKm = 25;
@@ -2056,7 +2074,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
         city = await geocodeCity(q);
         if (!city) toast("We couldn't find that place in India. Check the spelling or try a nearby larger city.", "error");
       } catch (err) {
-        toast("City lookup is unavailable right now — try one of the suggested cities.", "error");
+        toast("City lookup is unavailable right now - try one of the suggested cities.", "error");
       }
       btn.disabled = false;
       btn.textContent = "🔍 Search";
@@ -2064,7 +2082,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     }
 
     if (!isFinite(city.lat) || !isFinite(city.lng) || !insideIndia(city.lat, city.lng)) {
-      toast("PandeMApp covers India only — that place is outside the map.", "error");
+      toast("PandeMApp covers India only - that place is outside the map.", "error");
       return;
     }
     showCity(city);
@@ -2075,7 +2093,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const j = jitter(pos.coords.latitude, pos.coords.longitude, 150);
-        if (!insideIndia(j.lat, j.lng)) { toast("Your location is outside India — search for an Indian city instead.", "error"); return; }
+        if (!insideIndia(j.lat, j.lng)) { toast("Your location is outside India - search for an Indian city instead.", "error"); return; }
         $("cityInput").value = "";
         showCity({ name: "Your area", sub: "Based on your approximate location", lat: j.lat, lng: j.lng });
       },
@@ -2099,56 +2117,56 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     if (svcCity && !$("cityResult").hidden) renderCityResult();
   }
 
-  /* General precautions only — nothing here is medical advice, and the panel says so. */
-  function safetyTips(g) {
-    const groups = [{
-      title: "Before you go out",
-      items: [
-        "Check your state health department or city municipal body for official advisories before you travel.",
-        "Carry clean drinking water, wash hands often and eat freshly cooked food.",
-        "If you get a fever, rash or severe pain after going out, see a doctor — don't wait or self-medicate."
-      ]
-    }];
+  /* Precautions tied to what was actually reported nearby. One tip block per
+     reported type (most-reported first), plus one short general line.
+     General precautions only - not medical advice, and the panel says so. */
+  const TYPE_TIPS = {
+    dengue: ["Aedes mosquitoes that spread dengue bite in the daytime - wear full sleeves and use repellent during the day.",
+             "See a doctor for any fever lasting 2+ days; avoid painkillers like ibuprofen or aspirin unless a doctor advises."],
+    malaria: ["Malaria mosquitoes bite from dusk to dawn - use repellent in the evening and sleep under a net.",
+              "Fever with chills after a visit? Ask for a malaria blood test."],
+    chikungunya: ["Spread by the same daytime mosquito as dengue - cover arms and legs and use repellent.",
+                  "Remove water from coolers, pots and tyres where you are staying."],
+    jp_enceph: ["Avoid rice fields and pig farms at dusk and night in rural areas.",
+                "Sudden fever with confusion or drowsiness needs a hospital immediately."],
+    zika: ["Pregnant? Avoid travel to this area if you can, or take strict mosquito precautions.",
+           "Use repellent and full-sleeved clothing through the day."],
+    other_fever: ["Fevers are being reported - avoid crowded places if you feel unwell and see a doctor early."],
+    stagnant_water: ["Mosquitoes breed in standing water here - use repellent, especially near parks and construction sites."],
+    drainage: ["Avoid walking through overflowing drains or floodwater; wear closed footwear.",
+               "Wash feet and any cuts with soap after contact with dirty water."],
+    garbage: ["Avoid lingering near garbage heaps - they attract rats, flies and stray animals.",
+              "Drink only bottled, boiled or filtered water."],
+    rabies: ["Keep away from stray dogs and unfamiliar animals.",
+             "Any bite or scratch: wash with soap and water for 15 minutes and go to a hospital the same day for the rabies vaccine."],
+    nipah: ["Do not drink raw date-palm sap or eat fruit that may have been bitten by bats.",
+            "Avoid close contact with anyone who has fever with confusion or breathing trouble."],
+    leptospirosis: ["Avoid wading through floodwater or mud, especially with cuts on your feet.",
+                    "Wear closed shoes or boots in waterlogged areas."],
+    scrub_typhus: ["In grass or bushes, wear long trousers tucked into socks and use repellent on skin.",
+                   "Check your body for a black scab-like sore after outdoor trips."],
+    swine_flu: ["Wear a mask in crowded indoor places and wash hands often.",
+                "Avoid contact with pigs and people who have flu-like symptoms."],
+    avian_flu: ["Avoid live bird markets and contact with sick or dead birds.",
+                "Eat only fully cooked chicken and eggs."],
+    anthrax: ["Do not touch dead animals or handle raw meat from unknown sources.",
+              "Eat only well-cooked meat."],
+    brucellosis: ["Drink only boiled or pasteurised milk; avoid raw milk products."],
+    plague: ["Avoid areas with dead rats and use insect repellent against fleas."],
+    kyasanur: ["Avoid forest areas; wear long clothing and tick repellent if you must go."],
+    cchf: ["Avoid contact with livestock blood and ticks; wear gloves when handling animals."],
+    other_zoonotic: ["Keep away from sick or stray animals and wash hands after any animal contact."]
+  };
 
-    if (g.illness > 0 || g.risk > 0) {
-      groups.push({
-        title: "Mosquito bites",
-        items: [
-          "Wear light-coloured, full-sleeved shirts and long trousers. Some mosquitoes (such as those that spread dengue) bite in the daytime, others at dawn and dusk.",
-          "Use a mosquito repellent as directed on its label, and sleep under a net or in a screened or air-conditioned room.",
-          "Avoid places with standing water, blocked drains or heaps of garbage — mosquitoes breed there.",
-          "If you are pregnant or have a long-term illness, ask your doctor before travelling to an area with mosquito-borne illness."
-        ]
-      });
-    } else {
-      groups.push({
-        title: "Everyday protection",
-        items: ["Even where nothing is reported, mosquitoes are common in India — cover arms and legs and use repellent at dawn and dusk."]
-      });
-    }
-
-    if (g.risk > 0) {
-      groups.push({
-        title: "Water and drains",
-        items: [
-          "Avoid wading through floodwater or puddles, and wear closed footwear — floodwater can carry germs such as those that cause leptospirosis.",
-          "Report standing water, blocked drains or uncollected garbage to your municipal helpline."
-        ]
-      });
-    }
-
-    if (g.animal > 0) {
-      groups.push({
-        title: "Animals, ticks and food",
-        items: [
-          "Keep away from stray or unfamiliar animals; don't feed or touch them.",
-          "If an animal bites or scratches you, wash the wound with soap and running water for 15 minutes and go to a hospital or clinic the same day.",
-          "Avoid raw date-palm sap and fruit that has fallen under trees or may have been bitten by bats.",
-          "In grass or forest, wear long trousers tucked into socks to guard against ticks and mites.",
-          "Eat well-cooked meat, poultry and eggs, and drink boiled or pasteurised milk."
-        ]
-      });
-    }
+  function safetyTips(byType) {
+    const keys = Object.keys(byType).sort((a, b) => byType[b] - byType[a]).slice(0, 4);
+    const groups = keys
+      .filter((k) => TYPE_TIPS[k])
+      .map((k) => ({ title: typeInfo(k).icon + " " + typeInfo(k).label + " (" + byType[k] + ")", items: TYPE_TIPS[k] }));
+    groups.push({
+      title: "Always",
+      items: ["Check your city or state health department for official advisories, and see a doctor if you feel unwell."]
+    });
     return groups;
   }
 
@@ -2198,19 +2216,36 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       values.map((v) => '<option value="' + v + '"' + (v === current ? " selected" : "") + ">" + v + " " + unit + "</option>").join("") +
       "</select>";
 
-    const tips = safetyTips(g)
+    const tips = safetyTips(byType)
       .map((grp) =>
         '<div class="tip-group">' + escapeHtml(grp.title) + "</div><ul>" +
         grp.items.map((i) => "<li>" + escapeHtml(i) + "</li>").join("") + "</ul>")
       .join("");
+
+    const filters = '<div class="bar-row"><span class="bar-label">Within</span>' + sel("km", [10, 25, 50], svcKm, "km") +
+        '<span class="bar-label">Last</span>' + sel("days", [7, 30, 90], svcDays, "days") + "</div>";
+
+    if (!total) {
+      $("cityResult").innerHTML =
+        '<div class="svc-head"><div><h3>' + escapeHtml(city.name) + "</h3>" +
+          '<div class="bar-meta">' + escapeHtml(city.sub || "India") + "</div></div></div>" +
+        filters +
+        '<div class="svc-nodata">' +
+          '<div class="svc-nodata-ic">📭</div>' +
+          "<h4>Not enough data for " + escapeHtml(city.name) + "</h4>" +
+          "<p>No community reports within " + svcKm + " km in the last " + svcDays + " days, so we can't show a picture of this area or give specific advice. " +
+          "This does <b>not</b> mean the area is free of illness - try a wider distance or a longer period, and check your local health department.</p>" +
+          '<a class="btn btn-ghost" href="#report">Be the first to report here</a>' +
+        "</div>";
+      return;
+    }
 
     $("cityResult").innerHTML =
       '<div class="svc-head"><div><h3>' + escapeHtml(city.name) + "</h3>" +
         '<div class="bar-meta">' + escapeHtml(city.sub || "India") + "</div></div>" +
         '<span class="svc-level ' + level[0] + '">● ' + level[1] + "</span></div>" +
 
-      '<div class="bar-row"><span class="bar-label">Within</span>' + sel("km", [10, 25, 50], svcKm, "km") +
-        '<span class="bar-label">Last</span>' + sel("days", [7, 30, 90], svcDays, "days") + "</div>" +
+      filters +
 
       '<div class="svc-tiles">' +
         '<div class="svc-tile"><b>' + total + "</b><span>Total reports</span></div>" +
@@ -2222,16 +2257,16 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
       (total
         ? '<div><div class="svc-sub">Reported in the last ' + svcDays + " days, within " + svcKm + ' km</div><div class="svc-types">' + typeChips + "</div></div>" +
           '<div><div class="svc-sub">Most recent</div><div class="svc-recent">' + recent + "</div></div>"
-        : '<div class="svc-note" style="background:var(--bg);border-color:var(--line);color:var(--ink-soft)">No community reports found here in this period. That does <b>not</b> mean there are no cases — few people may be using the app in this area, and reports are unverified.</div>') +
+        : '<div class="svc-note" style="background:var(--bg);border-color:var(--line);color:var(--ink-soft)">No community reports found here in this period. That does <b>not</b> mean there are no cases - few people may be using the app in this area, and reports are unverified.</div>') +
 
-      '<div class="svc-tips"><h4>🧭 Safety recommendations for going out</h4>' + tips + "</div>" +
+      '<div class="svc-tips"><h4>🧭 Safety tips based on what is reported here</h4>' + tips + "</div>" +
 
       '<div class="svc-actions">' +
         '<button class="btn btn-primary" data-svc="map">🗺️ Show on the map</button>' +
         '<a class="btn btn-ghost" href="#report">📝 Report an issue</a>' +
       "</div>" +
 
-      '<div class="svc-note"><b>Not a health advice website.</b> These counts come only from unverified community reports and are not an official outbreak status. The tips are general precautions, not medical advice. Check with your local health department and see a doctor if you feel unwell.</div>';
+      '<div class="svc-note"><b>Not a health advice website.</b> These counts come only from unverified community reports and are not an official outbreak status. The tips are precautions based on reported types, not medical advice. Check with your local health department and see a doctor if you feel unwell.</div>';
   }
 
   function showCityOnMap() {
@@ -2332,8 +2367,8 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
         const last = user.metadata && user.metadata.lastSignInTime
           ? new Date(user.metadata.lastSignInTime)
           : null;
-        $("panelCreated").textContent = created ? created.toLocaleDateString("en-IN") : "—";
-        $("panelLastLogin").textContent = last ? last.toLocaleString("en-IN") : "—";
+        $("panelCreated").textContent = created ? created.toLocaleDateString("en-IN") : "-";
+        $("panelLastLogin").textContent = last ? last.toLocaleString("en-IN") : "-";
         syncUserProfile(user);
       }
       updateAccountUI();
@@ -2351,7 +2386,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
         toast("Signed in. Your reports are now linked to your account.", "success");
       } catch (err) {
         console.warn("[PandeMApp] Sign-in failed:", err && err.code, err && err.message);
-        toast("Sign-in failed — you can keep using PandeMApp as a guest.", "error");
+        toast("Sign-in failed - you can keep using PandeMApp as a guest.", "error");
       } finally {
         btn.disabled = false;
         btn.textContent = old;
@@ -2385,11 +2420,11 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     const live = meta.mode === "firestore";
     const offline = live && meta.offline;
     chip.classList.toggle("local", !live || offline);
-    $("modeChipText").textContent = !live ? "This browser only" : (offline ? "Offline — will sync" : "Live database");
+    $("modeChipText").textContent = !live ? "This browser only" : (offline ? "Offline - will sync" : "Live database");
     $("sourceText").textContent = !live ? "this browser (local demo)" : (offline ? "queued, syncs when online" : "shared cloud database");
     chip.title = live
       ? "Reports are shared with everyone through Firestore."
-      : "Firestore is unreachable or blocked by security rules — reports are stored locally. See firestore.rules in the README.";
+      : "Firestore is unreachable or blocked by security rules - reports are stored locally. See firestore.rules in the README.";
   }
 
   /* ================= wiring ================= */
@@ -2412,17 +2447,34 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     $("brandHome").addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toTop(); }
     });
-    $("headerCityBtn").addEventListener("click", () => {
-      document.getElementById("services").scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => $("cityInput").focus({ preventScroll: true }), 500);
-    });
+    /* feed age filter */
+    $("feedAge").addEventListener("change", (e) => { feedAge = e.target.value; renderFeed(); });
+
+    /* in-page links: land exactly below the sticky header + section bar */
+    const setStickyOffset = () => {
+      const h = (document.querySelector("header.navbar") || {}).offsetHeight || 0;
+      const n = (document.querySelector(".page-nav") || {}).offsetHeight || 0;
+      document.documentElement.style.setProperty("--sticky-h", (h + n + 12) + "px");
+    };
+    setStickyOffset();
+    window.addEventListener("resize", setStickyOffset);
+
+    /* disclaimer close - stays hidden for the rest of this visit */
+    const disc = $("disclaimerBar");
+    if (disc) {
+      if (sessionStorage.getItem("pm.disclaimerClosed") === "1") disc.hidden = true;
+      $("disclaimerClose").addEventListener("click", () => {
+        disc.hidden = true;
+        sessionStorage.setItem("pm.disclaimerClosed", "1");
+      });
+    }
     $("headerReportBtn").addEventListener("click", () => {
       document.getElementById("report").scrollIntoView({ behavior: "smooth", block: "start" });
     });
     $("modalCloseBtn").addEventListener("click", closeReportModal);
     $("cancelReportBtn").addEventListener("click", closeReportModal);
 
-    /* animal-spread form — same page, its own UI */
+    /* animal-spread form - same page, its own UI */
     buildAnimalTypes();
     buildAnimalExposure();
     buildAnimalSeverity();
@@ -2476,7 +2528,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
         },
         () => {
           btn.innerHTML = "📍 Use my location";
-          toast("Couldn't get your location — tap the map instead.", "error");
+          toast("Couldn't get your location - tap the map instead.", "error");
           $("geoBanner").classList.add("show");
         },
         { timeout: 8000 }
@@ -2514,7 +2566,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     Store.onChange(renderAll);
     Store.init().then((mode) => {
       if (mode !== "firestore") {
-        toast("Running in local mode — reports stay in this browser until Firestore rules are published.", "info");
+        toast("Running in local mode - reports stay in this browser until Firestore rules are published.", "info");
       }
     });
   }
@@ -2525,7 +2577,7 @@ import * as maplibregl from "https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-
     if (!$("reportModal").classList.contains("show")) $("overlay").classList.remove("show");
   }
 
-  /* Small debug handle — handy in the browser console and for automated checks. */
+  /* Small debug handle - handy in the browser console and for automated checks. */
   window.__healthmap = {
     getMap: () => map,
     isLoaded: () => mapLoaded,
