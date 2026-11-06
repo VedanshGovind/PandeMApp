@@ -9,17 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.css" />
-<link rel="stylesheet" href="dashboard.css?v=20261106i" />
+<link rel="stylesheet" href="dashboard.css?v=20261106j" />
 </head>
 <body>
-
-<!-- Disclaimer: top of page, can be dismissed for this visit -->
-<div class="top-disclaimer" role="note" id="disclaimerBar">
-  <div class="disc-pill">
-    <p><span aria-hidden="true">⚠️</span> <strong>Not health advice.</strong> Reports are unverified and are not a diagnosis or an official outbreak notice. Feeling unwell? See a doctor. Emergency: <b>112</b>.</p>
-    <button class="disc-close" id="disclaimerClose" aria-label="Close disclaimer" title="Close">✕</button>
-  </div>
-</div>
 
 <header class="navbar">
   <div class="brand" id="brandHome" role="button" tabindex="0" title="Back to top" aria-label="PandeMApp - back to top">
@@ -36,6 +28,13 @@
     <button class="icon-btn" id="profileOpenBtn" title="Account">👤</button>
   </div>
 </header>
+<!-- Disclaimer: just below the header, can be dismissed for this visit -->
+<div class="top-disclaimer" role="note" id="disclaimerBar">
+  <div class="disc-pill">
+    <p><span aria-hidden="true">⚠️</span> <strong>Not health advice.</strong> Reports are unverified and are not a diagnosis or an official outbreak notice. Feeling unwell? See a doctor. Emergency: <b>112</b>.</p>
+    <button class="disc-close" id="disclaimerClose" aria-label="Close disclaimer" title="Close">✕</button>
+  </div>
+</div>
 
 <main>
   <!-- ================= INTRO ================= -->
@@ -173,7 +172,7 @@
     </div>
 
     <div class="tab-panel" role="tabpanel" id="panelIllness" aria-labelledby="tabIllness" data-panel="illness">
-      <p class="tab-intro">Mosquito-borne and other fever illnesses in people. Includes a symptom checker to help you pick the closest match - it is not a diagnosis.</p>
+      <p class="tab-intro">Mosquito-borne and other fever illnesses in people. You can add symptoms to give more detail - it is not a diagnosis.</p>
       <div class="report-grid" id="illnessGrid"></div>
     </div>
 
@@ -621,7 +620,7 @@
 <!-- MapLibre GL JS is imported as an ES module inside dashboard.js (v6 ships ESM only) -->
 <script src="firebase-config.js"></script>
 <script src="store.js"></script>
-<script type="module" src="dashboard.js?v=20261106i"></script>
+<script type="module" src="dashboard.js?v=20261106j"></script>
 
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a422e7593f2ea716',t:'MTc5MDYwMDEzOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
